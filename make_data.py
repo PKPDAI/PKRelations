@@ -1,0 +1,1 @@
+"""This script makes all the data needed to subset potential sentences for relation extraction"""
