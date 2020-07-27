@@ -18,7 +18,7 @@
 
 8. **COMPARATIVE**: That's a complement of C_TYPE to specify whether instead of purely a central value it says: "higher", "less", ">","<". e.g. Clearance rate was ">"20mg/hL
 
-9. **UNITS**: Any units mentioned in the sentence that might relate to one of our entities
+9. **UNITS**: **Any** units mentioned in the sentence 
 
 10. **COV**: Covariate that complements the value of the parameter
 
