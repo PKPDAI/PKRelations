@@ -2,13 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3080836f-e690-4b2d-968e-547097e19a8d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Screenshot from 2020-07-27 18-34-48.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/add_entities.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rules_disable.jsonl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rel_extr.sh" beforeDir="false" afterPath="$PROJECT_DIR$/rel_extr.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -140,7 +135,14 @@
       <option name="project" value="LOCAL" />
       <updated>1595627342533</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="dale">
+      <created>1595871454503</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1595871454503</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -148,7 +150,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="sc" />
-    <option name="LAST_COMMIT_MESSAGE" value="sc" />
+    <MESSAGE value="dale" />
+    <option name="LAST_COMMIT_MESSAGE" value="dale" />
   </component>
   <component name="WindowStateProjectService">
     <state x="2338" y="189" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1595862132037">
@@ -156,10 +159,10 @@
     </state>
     <state x="2338" y="189" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1595862132037" />
     <state x="418" y="211" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.27.1920.1053@0.27.1920.1053" timestamp="1595609389162" />
-    <state x="2443" y="42" width="864" height="1003" key="CommitChangelistDialog2" timestamp="1595627342464">
+    <state x="2443" y="42" width="864" height="1003" key="CommitChangelistDialog2" timestamp="1595871454427">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2443" y="42" width="864" height="1003" key="CommitChangelistDialog2/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1595627342464" />
+    <state x="2443" y="42" width="864" height="1003" key="CommitChangelistDialog2/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1595871454427" />
     <state x="2663" y="291" width="424" height="491" key="FileChooserDialogImpl" timestamp="1595850092418">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -213,10 +216,14 @@
     </state>
     <state width="1874" height="322" key="GridCell.Tab.1.right/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1595865368670" />
     <state width="1874" height="328" key="GridCell.Tab.1.right/0.27.1920.1053@0.27.1920.1053" timestamp="1595611467443" />
-    <state x="2543" y="239" width="672" height="678" key="search.everywhere.popup" timestamp="1595627336827">
+    <state x="2475" y="272" width="800" height="543" key="Vcs.Push.Dialog.v2" timestamp="1595871461012">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2543" y="239" width="672" height="678" key="search.everywhere.popup/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1595627336827" />
+    <state x="2475" y="272" width="800" height="543" key="Vcs.Push.Dialog.v2/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1595871461012" />
+    <state x="2543" y="239" width="672" height="678" key="search.everywhere.popup" timestamp="1595871457486">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2543" y="239" width="672" height="678" key="search.everywhere.popup/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1595871457486" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

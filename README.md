@@ -1,6 +1,6 @@
 # PKRelations
 
-####Types of entities:
+#### Types of entities:
 
 1. **PK**: Mention of a pharmacokinetic parameter 
 
@@ -28,9 +28,9 @@
 
 14. **DOSAGE**?: Central value of a dosage administered to a patient (the relation between this and the units will be considered by the RELATED type)
 
-####Relation types:
+#### Relation types:
 
 1. **RELATED**: Main type of relation. Usually this gets assigned between all entities and C_VAL or RANGE_MIN, RANGE_MAX. Also RANGE_MIN should almost always have a RELATED that points towards RAGE_MAX.
 2. **COMPLEMENT**: This happens when a single covariate needs to be splitted into two or more tokens, in this case the main covariate complements the type. Example: 
 
-example.png
+![alt text](example.png)
