@@ -33,7 +33,7 @@ def check_to_keep(inp_sections):
     return keepit
 
 
-def filter_pmc(inp_path, inp_model, output_path, include_context=False):
+def filter_pmc(inp_path, inp_model, output_path, include_context=True):
     all_sentences = list(read_jsonl(inp_path))
     if not include_context:
         tmp_sentences = [sentence for sentence in tqdm(all_sentences) if
@@ -125,7 +125,7 @@ def filter_pmid(inp_path, inp_model, output_path, include_context=True):
 
     file: object
     for file in tqdm(os.listdir(inp_path)):
-
+        #file = "res_0052.jsonl"
         print("Extracting sentences from jsonl")
         output_path_tmp = output_path.split("/")
         output_path_tmp[-1] = file
@@ -191,12 +191,12 @@ def filter_pmid(inp_path, inp_model, output_path, include_context=True):
                 pmid = sentence['metadata']['pmid']
 
             # Flatten chunks and write
-            with open(output_path, 'w', encoding='utf-8') as file:
+            with open(output_path_tmp, 'w', encoding='utf-8') as filename:
                 for i, chk in enumerate(all_chunks):
                     for sentence in chk:
                         sentence['metadata']['chunkn'] = int(str(sentence['metadata']['pmid']) + str(i))
                         towrite = ujson.dumps(sentence, escape_forward_slashes=False) + '\n'
-                        file.write(towrite)
+                        filename.write(towrite)
             # === END INCLUDE PREVIOUS/SUBSEQUENT SENTENCE ===#
         else:
             tmp_sentences = [sentence for sentence in tmp_sentences if
@@ -210,7 +210,7 @@ def filter_pmid(inp_path, inp_model, output_path, include_context=True):
 
 
 if __name__ == "__main__":
-    path_model = os.path.join("data", "scispacy_ner")
+    path_model = os.path.join("data", "pk_ner_supertok")
 
     path_pmid = os.path.join("/home/ferran/Dropbox/PKEmbeddings/data/parsed_sentences/nottokenized/pmids")
     path_pmc = os.path.join("/home/ferran/Dropbox/PKRelations/data/all_sentences/raw/all_sentences.jsonl")
@@ -226,7 +226,8 @@ if __name__ == "__main__":
                                            "all_selected_nocontext.jsonl")
 
     nlp = spacy.load(path_model)
-    filter_pmc(inp_path=path_pmc, inp_model=nlp, output_path=out_path_pmc_context, include_context=True)
+    #
     filter_pmid(inp_path=path_pmid, inp_model=nlp, output_path=out_path_pmid_context, include_context=True)
-    filter_pmc(inp_path=path_pmc, inp_model=nlp, output_path=out_path_pmc_nocontext, include_context=False)
-    filter_pmid(inp_path=path_pmid, inp_model=nlp, output_path=out_path_pmid_nocontext, include_context=False)
+    filter_pmc(inp_path=path_pmc, inp_model=nlp, output_path=out_path_pmc_context, include_context=True)
+    #filter_pmc(inp_path=path_pmc, inp_model=nlp, output_path=out_path_pmc_nocontext, include_context=False)
+    #filter_pmid(inp_path=path_pmid, inp_model=nlp, output_path=out_path_pmid_nocontext, include_context=False)

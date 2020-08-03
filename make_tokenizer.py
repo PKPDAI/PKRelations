@@ -4,6 +4,8 @@ from spacy.lang import char_classes
 from spacy.symbols import ORTH
 from spacy.util import compile_prefix_regex, compile_infix_regex, compile_suffix_regex
 from scispacy.consts import ABBREVIATIONS
+import re
+from spacy.tokens import Span
 
 
 def combined_rule_prefixes() -> List[str]:
@@ -18,7 +20,8 @@ def combined_rule_prefixes() -> List[str]:
     #   prefix_punct = prefix_punct.replace(r"\{", r"\{(?![^\{\s]+\}\S+)")
 
     prefixes = (
-            ["§",
+            ["(", "/", ")", "[", "]",
+                       "§",
              "%",
              "=",
              r"\+",
@@ -60,23 +63,23 @@ def combined_rule_infixes():
     infixes = (
             char_classes.LIST_ELLIPSES
             + char_classes.LIST_ICONS
-            + [
-                r"(?<=[0-9])([a-zA-Z]+|[^a-zA-Z\d\s:,\.]+)",  # digit + non digit
-                r"×",  # added this special x character to tokenize it separately
-                # r"(?<=[0-9])[+\-\*^](?=[0-9-])", ######################################## OWN Modification
-                r"(?<=[0-9])[+\-\*^](?=[0-9-])",
-                r"(?<=[{al}])\.(?=[{au}])".format(
-                    al=char_classes.ALPHA_LOWER, au=char_classes.ALPHA_UPPER
-                ),
-                r"[^a-zA-Z\d\s:]",  # All non alphanumerics are infixes
-                r"(?<=[0-9])[a-zA-Z+]([^a-zA-Z\d\s:])",  # Separate digit + alpha + non-alphanum
-                r"(?<=[{a}]),(?=[{a}])".format(a=char_classes.ALPHA),
-                r'(?<=[{a}])[?";:=,.]*(?:{h})(?=[{a}])'.format(
-                    a=char_classes.ALPHA, h=hyphens
-                ),
-                # removed / to prevent tokenization of /
-                r'(?<=[{a}"])[:<>=](?=[{a}])'.format(a=char_classes.ALPHA),
-            ]
+            + ["[", "]",
+               r"(?<=[0-9])([a-zA-Z]+|[^a-zA-Z\d\s:,\.]+)",  # digit + non digit
+               r"×",  # added this special x character to tokenize it separately
+               # r"(?<=[0-9])[+\-\*^](?=[0-9-])", ######################################## OWN Modification
+               r"(?<=[0-9])[+\-\*^](?=[0-9-])",
+               r"(?<=[{al}])\.(?=[{au}])".format(
+                   al=char_classes.ALPHA_LOWER, au=char_classes.ALPHA_UPPER
+               ),
+               r"[^a-zA-Z\d\s:\.,]",  # All non alphanumerics are infixes
+               r"(?<=[0-9])[a-zA-Z+]([^a-zA-Z\d\s:])",  # Separate digit + alpha + non-alphanum
+               r"(?<=[{a}]),(?=[{a}])".format(a=char_classes.ALPHA),
+               r'(?<=[{a}])[?";:=,.]*(?:{h})(?=[{a}])'.format(
+                   a=char_classes.ALPHA, h=hyphens
+               ),
+               # removed / to prevent tokenization of /
+               r'(?<=[{a}"])[:<>=](?=[{a}])'.format(a=char_classes.ALPHA),
+               ]
     )
     return infixes
 
@@ -103,6 +106,7 @@ def combined_rule_suffixes():
             + char_classes.LIST_ICONS
             + ["'s", "'S", "’s", "’S", "’s", "’S"]
             + [
+                "[", "]",
                 ",",
                 r"[^a-zA-Z\d\s:]",  # all non-alphanum
                 r"(?<=[0-9])([a-zA-Z]+|[^a-zA-Z\d\s:])",
@@ -161,6 +165,8 @@ if __name__ == '__main__':
         print(t[1], "\t", t[0])
 
     prefix_re, infix_re, suffix_re, exclusions = combined_rule_tokenizer()
+    token_match_re = re.compile(r"(?<=[a-zA-Z])\-\d")
+    # nlp.tokenizer.token_match = token_match_re.search
     nlp.tokenizer.prefix_search = prefix_re.search
     nlp.tokenizer.infix_finditer = infix_re.finditer
     nlp.tokenizer.suffix_search = suffix_re.search
@@ -169,33 +175,82 @@ if __name__ == '__main__':
     print("\n============ NEW TOKENIZER ============\n")
     for t in tok_exp:
         print(t[1], "\t", t[0])
-    text3 = 'The accumulation ratio was calculated as the ratio of AUC0–τ,ss to AUC0–τ (single dose), and the fluctuation ratio was calculated by (Cmax,ss − Cmin,ss)/Cavg, where Cavg is the average steady-state drug concentration during multiple dosing, which is calculated as AUC0–τ,ss/τ, where τ is the dosing interval (6 hours). The clearance was 452.234 and 3,2'
+    text3 = 'The accumulation ratio was calculated as the mean ratio of AUC0–τ,ss to AUC0–τ (single dose) which were ' \
+            '45.151 87,7 546 4.3 and 15.6h/l-1, and the population fluctuation ratio was 3333.4 [AUC was 3443]. ' \
+            'The influence of age, sex, race, total protein, and BMI was assessed for the volumes of distribution ' \
+            '[apparent central volume of distribution (V2/F), apparent peripheral volume of distribution (V3/F). ' \
+            'The exposures [maximum plasma concentration (Cmax)...]'
     tok_exp = nlp.tokenizer.explain(text3)
     print("\n============ NEW TOKENIZER ============\n")
     for t in tok_exp:
         print(t[1], "\t", t[0])
 
-    nlp.to_disk('sci_lg_supertokenizer')
+nlp.to_disk('sci_lg_supertokenizer')
+
+
+def check_overlap(doc_ent_spans, start_new_entity, end_new_entity):
+    """Checks if new entity overlaps with existing ones"""
+    for ent_span in doc_ent_spans:
+        if (ent_span[0] < start_new_entity < ent_span[1]) or (ent_span[0] < end_new_entity < ent_span[1]):
+            return True
+        break
+    return False
+
+
+def check_restrictions(inp_doc, inp_entity):
+    if len(inp_doc) - (len(inp_doc) - inp_entity[0].i) >= 2:
+        if doc[inp_entity.start - 1].text == "-" and doc[inp_entity.start - 2].text[-1].isalpha():
+            print("Exception here: ")
+            print(doc[inp_entity.start - 2:inp_entity.end].text + "\n")
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+from spacy.matcher import Matcher
+
+matcher = Matcher(nlp.vocab)
+pattern = [{'LIKE_NUM': True}]
+pattern2 = [{'LOWER': {"IN": ["mean", "median", "population", "individual", "estimated", "std", "+-"]}}]
+matcher.add("VALUE", None, pattern)
+matcher.add("TYPE_MEAS", None, pattern2)
+doc = nlp(text3)
+matches = matcher(doc)
+for match_id, start, end in matches:
+    string_id = nlp.vocab.strings[match_id]  # Get string representation
+    span = doc[start:end]  # The matched span
+    print(match_id, string_id, start, end, span.text)
+
+
+def get_values_cl(inp_doc):
+    new_ents = []
+    inp_doc.ents = []
+    temp_matches = matcher(inp_doc)
+    previous_ent_spans = [(inp_ent.start_char, inp_ent.end_char) for inp_ent in inp_doc.ents]
+    for temp_match_id, temp_start, temp_end in temp_matches:
+        temp_string_id = nlp.vocab.strings[temp_match_id]
+        new_ent = Span(inp_doc, temp_start, temp_end, label=temp_string_id)
+        if (not check_overlap(doc_ent_spans=previous_ent_spans, start_new_entity=temp_start, end_new_entity=temp_end)) \
+                and (not check_restrictions(inp_doc=inp_doc, inp_entity=new_ent)):
+            new_ents.append(new_ent)
+    inp_doc.ents = new_ents
+    return inp_doc
+
+
+nlp.add_pipe(get_values_cl, after='ner')
+
+text3 = 'The accumulation ratio was calculated as the mean ratio of AUC0–τ,ss to AUC0–τ (single dose) which were ' \
+        '45.151 87,7 546 4.3 and 15.6h/l-1, and the Population fluctuation ratio was 3333.4, 10^2, 10^2'
+
+print(text3)
+for ent in nlp(text3).ents:
+    print(ent.text, ent.label_)
+
+# doc = nlp("Pepito had an AUC of 342.3")
 # text3 = "times higher following i.p. injection of 95 mg kg-1 (0.25 mmol kg-1) of the prodrug as compared with " \
 #         "administration via the oral and i.v. routes, respectively. After i.v. injection , peak levels of t "
 # tok_exp = nlp.tokenizer.explain(text3)
 # for t in tok_exp:
 #    print(t[1], "\t", t[0])
-
-#
-
-# tok_exp = nlp.tokenizer.explain(text3)
-# for t in tok_exp:
-#    print(t[1], "\t", t[0])
-
-# for sent in nlp(text3).sents:
-#    print(sent)
-
-
-# letsee = {"text":"The accumulation ratio was calculated as the ratio of AUC0\u2013\u03c4,ss to AUC0\u2013\u03c4 (single dose), and the fluctuation ratio was calculated by (Cmax,ss \u2212 Cmin,ss)/Cavg, where Cavg is the average steady-state drug concentration during multiple dosing, which is calculated as AUC0\u2013\u03c4,ss/\u03c4, where \u03c4 is the dosing interval (6 hours).","spans":[{"start":45,"end":60,"token_start":7,"token_end":9,"label":"PK"},{"start":61,"end":63,"token_start":11,"token_end":11,"label":"PK"},{"start":67,"end":73,"token_start":13,"token_end":13,"label":"PK"},{"start":134,"end":141,"token_start":27,"token_end":29,"label":"PK"},{"start":144,"end":157,"token_start":31,"token_end":33,"label":"PK"},{"start":165,"end":169,"token_start":36,"token_end":36,"label":"PK"},{"start":177,"end":216,"token_start":39,"token_end":42,"label":"PK"},{"start":264,"end":270,"token_start":51,"token_end":51,"label":"PK"},{"start":271,"end":275,"token_start":53,"token_end":53,"label":"PK"}],"_input_hash":-1570795161,"_task_hash":306860192,"tokens":[{"text":"The","start":0,"end":3,"id":0},{"text":"accumulation","start":4,"end":16,"id":1},{"text":"ratio","start":17,"end":22,"id":2},{"text":"was","start":23,"end":26,"id":3},{"text":"calculated","start":27,"end":37,"id":4},{"text":"as","start":38,"end":40,"id":5},{"text":"the","start":41,"end":44,"id":6},{"text":"ratio","start":45,"end":50,"id":7},{"text":"of","start":51,"end":53,"id":8},{"text":"AUC0\u2013\u03c4","start":54,"end":60,"id":9},{"text":",","start":60,"end":61,"id":10},{"text":"ss","start":61,"end":63,"id":11},{"text":"to","start":64,"end":66,"id":12},{"text":"AUC0\u2013\u03c4","start":67,"end":73,"id":13},{"text":"(","start":74,"end":75,"id":14},{"text":"single","start":75,"end":81,"id":15},{"text":"dose","start":82,"end":86,"id":16},{"text":")","start":86,"end":87,"id":17},{"text":",","start":87,"end":88,"id":18},{"text":"and","start":89,"end":92,"id":19},{"text":"the","start":93,"end":96,"id":20},{"text":"fluctuation","start":97,"end":108,"id":21},{"text":"ratio","start":109,"end":114,"id":22},{"text":"was","start":115,"end":118,"id":23},{"text":"calculated","start":119,"end":129,"id":24},{"text":"by","start":130,"end":132,"id":25},{"text":"(","start":133,"end":134,"id":26},{"text":"Cmax","start":134,"end":138,"id":27},{"text":",","start":138,"end":139,"id":28},{"text":"ss","start":139,"end":141,"id":29},{"text":"\u2212","start":142,"end":143,"id":30},{"text":"Cmin","start":144,"end":148,"id":31},{"text":",","start":148,"end":149,"id":32},{"text":"ss)/Cavg","start":149,"end":157,"id":33},{"text":",","start":157,"end":158,"id":34},{"text":"where","start":159,"end":164,"id":35},{"text":"Cavg","start":165,"end":169,"id":36},{"text":"is","start":170,"end":172,"id":37},{"text":"the","start":173,"end":176,"id":38},{"text":"average","start":177,"end":184,"id":39},{"text":"steady-state","start":185,"end":197,"id":40},{"text":"drug","start":198,"end":202,"id":41},{"text":"concentration","start":203,"end":216,"id":42},{"text":"during","start":217,"end":223,"id":43},{"text":"multiple","start":224,"end":232,"id":44},{"text":"dosing","start":233,"end":239,"id":45},{"text":",","start":239,"end":240,"id":46},{"text":"which","start":241,"end":246,"id":47},{"text":"is","start":247,"end":249,"id":48},{"text":"calculated","start":250,"end":260,"id":49},{"text":"as","start":261,"end":263,"id":50},{"text":"AUC0\u2013\u03c4","start":264,"end":270,"id":51},{"text":",","start":270,"end":271,"id":52},{"text":"ss/\u03c4","start":271,"end":275,"id":53},{"text":",","start":275,"end":276,"id":54},{"text":"where","start":277,"end":282,"id":55},{"text":"\u03c4","start":283,"end":284,"id":56},{"text":"is","start":285,"end":287,"id":57},{"text":"the","start":288,"end":291,"id":58},{"text":"dosing","start":292,"end":298,"id":59},{"text":"interval","start":299,"end":307,"id":60},{"text":"(","start":308,"end":309,"id":61},{"text":"6","start":309,"end":310,"id":62},{"text":"hours","start":311,"end":316,"id":63},{"text":")","start":316,"end":317,"id":64},{"text":".","start":317,"end":318,"id":65}],"_session_id":None,"_view_id":"review","answer":"accept","sessions":["training_ferran2"],"versions":[{"text":"The accumulation ratio was calculated as the ratio of AUC0\u2013\u03c4,ss to AUC0\u2013\u03c4 (single dose), and the fluctuation ratio was calculated by (Cmax,ss \u2212 Cmin,ss)/Cavg, where Cavg is the average steady-state drug concentration during multiple dosing, which is calculated as AUC0\u2013\u03c4,ss/\u03c4, where \u03c4 is the dosing interval (6 hours).","spans":[{"start":45,"end":60,"token_start":7,"token_end":9,"label":"PK"},{"start":61,"end":63,"token_start":11,"token_end":11,"label":"PK"},{"start":67,"end":73,"token_start":13,"token_end":13,"label":"PK"},{"start":134,"end":141,"token_start":27,"token_end":29,"label":"PK"},{"start":144,"end":157,"token_start":31,"token_end":33,"label":"PK"},{"start":165,"end":169,"token_start":36,"token_end":36,"label":"PK"},{"start":177,"end":216,"token_start":39,"token_end":42,"label":"PK"},{"start":264,"end":270,"token_start":51,"token_end":51,"label":"PK"},{"start":271,"end":275,"token_start":53,"token_end":53,"label":"PK"}],"_input_hash":-1570795161,"_task_hash":306860192,"tokens":[{"text":"The","start":0,"end":3,"id":0},{"text":"accumulation","start":4,"end":16,"id":1},{"text":"ratio","start":17,"end":22,"id":2},{"text":"was","start":23,"end":26,"id":3},{"text":"calculated","start":27,"end":37,"id":4},{"text":"as","start":38,"end":40,"id":5},{"text":"the","start":41,"end":44,"id":6},{"text":"ratio","start":45,"end":50,"id":7},{"text":"of","start":51,"end":53,"id":8},{"text":"AUC0\u2013\u03c4","start":54,"end":60,"id":9},{"text":",","start":60,"end":61,"id":10},{"text":"ss","start":61,"end":63,"id":11},{"text":"to","start":64,"end":66,"id":12},{"text":"AUC0\u2013\u03c4","start":67,"end":73,"id":13},{"text":"(","start":74,"end":75,"id":14},{"text":"single","start":75,"end":81,"id":15},{"text":"dose","start":82,"end":86,"id":16},{"text":")","start":86,"end":87,"id":17},{"text":",","start":87,"end":88,"id":18},{"text":"and","start":89,"end":92,"id":19},{"text":"the","start":93,"end":96,"id":20},{"text":"fluctuation","start":97,"end":108,"id":21},{"text":"ratio","start":109,"end":114,"id":22},{"text":"was","start":115,"end":118,"id":23},{"text":"calculated","start":119,"end":129,"id":24},{"text":"by","start":130,"end":132,"id":25},{"text":"(","start":133,"end":134,"id":26},{"text":"Cmax","start":134,"end":138,"id":27},{"text":",","start":138,"end":139,"id":28},{"text":"ss","start":139,"end":141,"id":29},{"text":"\u2212","start":142,"end":143,"id":30},{"text":"Cmin","start":144,"end":148,"id":31},{"text":",","start":148,"end":149,"id":32},{"text":"ss)/Cavg","start":149,"end":157,"id":33},{"text":",","start":157,"end":158,"id":34},{"text":"where","start":159,"end":164,"id":35},{"text":"Cavg","start":165,"end":169,"id":36},{"text":"is","start":170,"end":172,"id":37},{"text":"the","start":173,"end":176,"id":38},{"text":"average","start":177,"end":184,"id":39},{"text":"steady-state","start":185,"end":197,"id":40},{"text":"drug","start":198,"end":202,"id":41},{"text":"concentration","start":203,"end":216,"id":42},{"text":"during","start":217,"end":223,"id":43},{"text":"multiple","start":224,"end":232,"id":44},{"text":"dosing","start":233,"end":239,"id":45},{"text":",","start":239,"end":240,"id":46},{"text":"which","start":241,"end":246,"id":47},{"text":"is","start":247,"end":249,"id":48},{"text":"calculated","start":250,"end":260,"id":49},{"text":"as","start":261,"end":263,"id":50},{"text":"AUC0\u2013\u03c4","start":264,"end":270,"id":51},{"text":",","start":270,"end":271,"id":52},{"text":"ss/\u03c4","start":271,"end":275,"id":53},{"text":",","start":275,"end":276,"id":54},{"text":"where","start":277,"end":282,"id":55},{"text":"\u03c4","start":283,"end":284,"id":56},{"text":"is","start":285,"end":287,"id":57},{"text":"the","start":288,"end":291,"id":58},{"text":"dosing","start":292,"end":298,"id":59},{"text":"interval","start":299,"end":307,"id":60},{"text":"(","start":308,"end":309,"id":61},{"text":"6","start":309,"end":310,"id":62},{"text":"hours","start":311,"end":316,"id":63},{"text":")","start":316,"end":317,"id":64},{"text":".","start":317,"end":318,"id":65}],"_session_id":"training_ferran2","_view_id":"ner_manual","answer":"accept","sessions":["training_ferran2"],"default":True},{"text":"The accumulation ratio was calculated as the ratio of AUC0\u2013\u03c4,ss to AUC0\u2013\u03c4 (single dose), and the fluctuation ratio was calculated by (Cmax,ss \u2212 Cmin,ss)/Cavg, where Cavg is the average steady-state drug concentration during multiple dosing, which is calculated as AUC0\u2013\u03c4,ss/\u03c4, where \u03c4 is the dosing interval (6 hours).","spans":[{"start":45,"end":60,"token_start":7,"token_end":9,"label":"PK"},{"start":67,"end":73,"token_start":13,"token_end":13,"label":"PK"},{"start":134,"end":141,"token_start":27,"token_end":29,"label":"PK"},{"start":144,"end":157,"token_start":31,"token_end":33,"label":"PK"},{"start":264,"end":270,"token_start":51,"token_end":51,"label":"PK"}],"_input_hash":-1570795161,"_task_hash":349682656,"tokens":[{"text":"The","start":0,"end":3,"id":0},{"text":"accumulation","start":4,"end":16,"id":1},{"text":"ratio","start":17,"end":22,"id":2},{"text":"was","start":23,"end":26,"id":3},{"text":"calculated","start":27,"end":37,"id":4},{"text":"as","start":38,"end":40,"id":5},{"text":"the","start":41,"end":44,"id":6},{"text":"ratio","start":45,"end":50,"id":7},{"text":"of","start":51,"end":53,"id":8},{"text":"AUC0\u2013\u03c4","start":54,"end":60,"id":9},{"text":",","start":60,"end":61,"id":10},{"text":"ss","start":61,"end":63,"id":11},{"text":"to","start":64,"end":66,"id":12},{"text":"AUC0\u2013\u03c4","start":67,"end":73,"id":13},{"text":"(","start":74,"end":75,"id":14},{"text":"single","start":75,"end":81,"id":15},{"text":"dose","start":82,"end":86,"id":16},{"text":")","start":86,"end":87,"id":17},{"text":",","start":87,"end":88,"id":18},{"text":"and","start":89,"end":92,"id":19},{"text":"the","start":93,"end":96,"id":20},{"text":"fluctuation","start":97,"end":108,"id":21},{"text":"ratio","start":109,"end":114,"id":22},{"text":"was","start":115,"end":118,"id":23},{"text":"calculated","start":119,"end":129,"id":24},{"text":"by","start":130,"end":132,"id":25},{"text":"(","start":133,"end":134,"id":26},{"text":"Cmax","start":134,"end":138,"id":27},{"text":",","start":138,"end":139,"id":28},{"text":"ss","start":139,"end":141,"id":29},{"text":"\u2212","start":142,"end":143,"id":30},{"text":"Cmin","start":144,"end":148,"id":31},{"text":",","start":148,"end":149,"id":32},{"text":"ss)/Cavg","start":149,"end":157,"id":33},{"text":",","start":157,"end":158,"id":34},{"text":"where","start":159,"end":164,"id":35},{"text":"Cavg","start":165,"end":169,"id":36},{"text":"is","start":170,"end":172,"id":37},{"text":"the","start":173,"end":176,"id":38},{"text":"average","start":177,"end":184,"id":39},{"text":"steady-state","start":185,"end":197,"id":40},{"text":"drug","start":198,"end":202,"id":41},{"text":"concentration","start":203,"end":216,"id":42},{"text":"during","start":217,"end":223,"id":43},{"text":"multiple","start":224,"end":232,"id":44},{"text":"dosing","start":233,"end":239,"id":45},{"text":",","start":239,"end":240,"id":46},{"text":"which","start":241,"end":246,"id":47},{"text":"is","start":247,"end":249,"id":48},{"text":"calculated","start":250,"end":260,"id":49},{"text":"as","start":261,"end":263,"id":50},{"text":"AUC0\u2013\u03c4","start":264,"end":270,"id":51},{"text":",","start":270,"end":271,"id":52},{"text":"ss/\u03c4","start":271,"end":275,"id":53},{"text":",","start":275,"end":276,"id":54},{"text":"where","start":277,"end":282,"id":55},{"text":"\u03c4","start":283,"end":284,"id":56},{"text":"is","start":285,"end":287,"id":57},{"text":"the","start":288,"end":291,"id":58},{"text":"dosing","start":292,"end":298,"id":59},{"text":"interval","start":299,"end":307,"id":60},{"text":"(","start":308,"end":309,"id":61},{"text":"6","start":309,"end":310,"id":62},{"text":"hours","start":311,"end":316,"id":63},{"text":")","start":316,"end":317,"id":64},{"text":".","start":317,"end":318,"id":65}],"_session_id":"training_simon","_view_id":"ner_manual","answer":"accept","sessions":["training_simon"],"default":False}],"view_id":"ner_manual"}
-#
-# for pepito in letsee['spans']:
-#    print(letsee['text'][pepito['start']:pepito['end']])
-#
-# for token in nlp(letsee['text']):
-#	print(token)

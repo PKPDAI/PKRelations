@@ -8,25 +8,6 @@ from spacy import displacy
 from tqdm import tqdm
 
 
-# def extract_relations(inp_sentence):
-#    doc = nlp(inp_sentence)
-#    # 1 detect chemical tokens and return
-#    ch_tokens = [5, 10]
-#    # 2 check if any
-#    chemical_pk = []  # check tupple
-#    entities = doc.ents
-#    for ch in ch_tokens:
-#        chemical = doc[ch]
-#        chemical_head = chemical.head
-#        if chemical_head.ent_type_ == "PK":
-#            for entity in entities:
-#                if chemical_head.ent_id_ == entity.ent_id_:
-#                    chemical_pk.append((chemical.text, entity.text, entity.ent_id_))
-#        else:
-#            if chemical_head.head.pos_ == "VERB":
-#
-#    return chemical_pk
-
 def filter_spans(spans):
     # Filter a sequence of spans so they don't contain overlaps
     # For spaCy 2.1.4+: this function is available as spacy.util.filter_spans()
@@ -83,8 +64,7 @@ def get_relations(inp_sentence):
                 if children.ent_type_ == "CHEMICAL":
                     if children.dep_ == "nmod":
                         for minichildren in children.children:
-                            if minichildren.dep_ == "case" and minichildren.pos_ == "ADP" and minichildren.text in [
-                                "by", "through"]:  # by//through etc
+                            if minichildren.dep_ == "case" and minichildren.pos_ == "ADP" and minichildren.text in ["by", "through"]:  # by//through etc
                                 # check that there is no parameter between the verb and the chemical
                                 inducer_chemical = children
 
@@ -251,7 +231,8 @@ def analyse_all(sentence):
     print(sentence)
     print("============== Model extracted ========================")
     for rel in rels:
-        print(rel[0], "|", rel[1], "| the |", rel[2], "| of |", rel[3])
+        #print(rel[0], "|", rel[1], "| the |", rel[2], "| of |", rel[3])
+        print(rel[0], "|", rel[1],  rel[2],  rel[3])
     print("\n")
 
 
@@ -285,4 +266,4 @@ for x in tqdm(sentences_rel):
 
 # TODO: INCLUDE NON IN FRONT OF VERB!
 # TODO: INCLUDE MORE THAN 2 CHEMICALS MENTIONED
-# TODO: INCLUDE 
+# TODO: TAKE INTO ACCOUNT WHEN MORE THAN 2 CHEMICALS ARE MENTIONED
