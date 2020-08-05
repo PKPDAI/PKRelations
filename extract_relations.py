@@ -1,82 +1,144 @@
-#!/usr/bin/env python
-# coding: utf8
-"""A simple example of extracting relations between phrases and entities using
-spaCy's named entity recognizer and the dependency parse. Here, we extract
-money and currency values (entities labelled as MONEY) and then check the
-dependency tree to find the noun phrase they are referring to – for example:
-$9.4 million --> Net income.
-
-Compatible with: spaCy v2.0.0+
-Last tested with: v2.2.1
-"""
-from __future__ import unicode_literals, print_function
-
-import plac
+import os
+from bs4 import BeautifulSoup
+from nltk.stem import PorterStemmer
 import spacy
+from spacy.tokens import Span
+from spacy import displacy
+from tqdm import tqdm
+from spacy.util import filter_spans
+import itertools
 
 
-TEXTS = [
-    "Net income was $9.4 million compared to the prior year of $2.7 million.",
-    "Revenue exceeded twelve billion dollars, with a loss of $1b.",
-]
+def get_sdp_path(doc, subj, obj, lca_matrix):
+    lca = lca_matrix[subj, obj]
+
+    current_node = doc[subj]
+    subj_path = [current_node]
+    if lca != -1:
+        if lca != subj:
+            while current_node.head.i != lca:
+                current_node = current_node.head
+                subj_path.append(current_node)
+            subj_path.append(current_node.head)
+
+    current_node = doc[obj]
+    obj_path = [current_node]
+    if lca != -1:
+        if lca != obj:
+            while current_node.head.i != lca:
+                current_node = current_node.head
+                obj_path.append(current_node)
+            obj_path.append(current_node.head)
+
+    return subj_path + obj_path[::-1][1:]
 
 
-@plac.annotations(
-    model=("Model to load (needs parser and NER)", "positional", None, str)
-)
-def main(model="en_core_web_sm"):
-    nlp = spacy.load(model)
-    print("Loaded model '%s'" % model)
-    print("Processing %d texts" % len(TEXTS))
+def get_relations(inp_sentence):
+    doc_pk = nlp_pk(inp_sentence)
+    doc_ch = nlp_ch(inp_sentence)
+    for chemical in doc_ch.ents:
+        ch_ent = Span(doc_pk, chemical.start, chemical.end, label="CHEMICAL")
+        try:
+            doc_pk.ents = list(doc_pk.ents) + [ch_ent]
+        except:
+            doc_pk.ents = list(doc_pk.ents)
 
-    for text in TEXTS:
-        doc = nlp(text)
-        relations = extract_currency_relations(doc)
-        for r1, r2 in relations:
-            print("{:<10}\t{}\t{}".format(r1.text, r2.ent_type_, r2.text))
-
-
-def filter_spans(spans):
-    # Filter a sequence of spans so they don't contain overlaps
-    # For spaCy 2.1.4+: this function is available as spacy.util.filter_spans()
-    get_sort_key = lambda span: (span.end - span.start, -span.start)
-    sorted_spans = sorted(spans, key=get_sort_key, reverse=True)
-    result = []
-    seen_tokens = set()
-    for span in sorted_spans:
-        # Check for end - 1 here because boundaries are inclusive
-        if span.start not in seen_tokens and span.end - 1 not in seen_tokens:
-            result.append(span)
-        seen_tokens.update(range(span.start, span.end))
-    result = sorted(result, key=lambda span: span.start)
-    return result
-
-
-def extract_currency_relations(doc):
     # Merge entities and noun chunks into one token
-    spans = list(doc.ents) + list(doc.noun_chunks)
+    spans = list(doc_pk.ents)  # + list(doc_pk.noun_chunks)
     spans = filter_spans(spans)
-    with doc.retokenize() as retokenizer:
+    with doc_pk.retokenize() as retokenizer:
         for span in spans:
             retokenizer.merge(span)
 
-    relations = []
-    for money in filter(lambda w: w.ent_type_ == "MONEY", doc):
-        if money.dep_ in ("attr", "dobj"):
-            subject = [w for w in money.head.lefts if w.dep_ == "nsubj"]
-            if subject:
-                subject = subject[0]
-                relations.append((subject, money))
-        elif money.dep_ == "pobj" and money.head.dep_ == "prep":
-            relations.append((money.head.head, money))
-    return relations
+    chemicals = [entity for entity in doc_pk if entity.ent_type_ == "CHEMICAL"]
+    verbs = [verb for verb in doc_pk if verb.pos_ == "VERB"]
+    parameters = [pk for pk in doc_pk if pk.ent_type_ == "PK"]
+
+    if len(chemicals) >= 2 and parameters and verbs:  # first condition
+        lca_matrix = doc_pk.get_lca_matrix()
+        ch_combos = get_combinations(chemicals)
+        for combo in ch_combos:
+            print("== Comparing", combo[0], "with", combo[1], "==")
+            sdp = get_sdp_path(doc_pk, combo[0].i, combo[1].i, lca_matrix)
+            print(sdp)
+
+        relations = []
+        for verb in verbs:
+            subject_chemical = []
+            inducer_chemical = []
+            relational_verb = verb
+            pk_parameters = []
+
+    else:
+        return []
 
 
-if __name__ == "__main__":
-    plac.call(main)
+def visualize_text(text):
+    options = {"compact": True, "font": "Source Sans Pro"}
+    doc_pk = nlp_pk(text)
+    doc_ch = nlp_ch(text)
+    for chemical in doc_ch.ents:
+        ch_ent = Span(doc_pk, chemical.start, chemical.end, label="CHEMICAL")
+        try:
+            doc_pk.ents = list(doc_pk.ents) + [ch_ent]
+        except:
+            doc_pk.ents = list(doc_pk.ents)
 
-    # Expected output:
-    # Net income      MONEY   $9.4 million
-    # the prior year  MONEY   $2.7 million
-    # Revenue         MONEY   twelve billion dollars
-    # a loss          MONEY   1b
+    # Merge entities and noun chunks into one token
+    spans = list(doc_pk.ents)  # + list(doc_pk.noun_chunks)
+    spans = filter_spans(spans)
+    with doc_pk.retokenize() as retokenizer:
+        for span in spans:
+            retokenizer.merge(span)
+    spacy.displacy.serve(doc_pk, style='dep', options=options)
+
+
+def get_combinations(
+        ch_list):  # get all the possible combinations within elements in the list including swaped versions
+    new_list_tuple = list(itertools.combinations(ch_list, 2))
+    for temp_tuple in itertools.combinations(ch_list, 2):
+        new_list_tuple.append((temp_tuple[1], temp_tuple[0]))  # add swapped version
+    return new_list_tuple
+
+
+if __name__ == '__main__':
+    inp_file_path = os.path.join("data", "pkddi", "invivo_train.xml")
+
+    with open(inp_file_path) as infile:
+        soup = BeautifulSoup(infile)
+
+    sentences_rel = list(
+        [(element.text.replace("\n", ""), element['ddi'], element['sem']) for element in soup.findAll("annotation")])
+    # ps = PorterStemmer()
+    # change_voc = list(set([ps.stem(mention.text) for element in soup.findAll("annotation") for mention in
+    #                       element.findAll("cons", {"sem": "G_CHANGE"})]))
+
+    # nlp = spacy.load("en_core_sci_lg")
+    nlp_pk = spacy.load("data/scispacy_ner")
+    nlp_ch = spacy.load("en_ner_bc5cdr_md")
+
+    # analyse_all(sentences_rel[323][0])
+    # analyse_all(sentences_rel[324][0])
+    # analyse_all(sentences_rel[4][0])
+    get_relations(sentences_rel[5][0])
+    # analyse_all(sentences_rel[8][0])
+    get_relations("Midazolam increased the AUC of amoxicillin")
+    get_relations("The bioavailability and AUC of oral ondansetron was reduced from 60% to 40% (P<.01) by rifampin")
+
+#  analyse_all("Midazolam's AUC was increased by amoxicillin")
+#  analyse_all("Midazolam's AUC was increased through amoxicillin administration")
+#  analyse_all("The clearance of mitoxantrone and etopside was decreased by 64% and 60%, respectively, when combined "
+#              "with valspodar")
+#  analyse_all("The bioavailability and AUC of oral ondansetron was reduced from 60% to 40% (P<.01) by rifampin")
+#  analyse_all("The volume of distribution of racemic primaquine was decreased by a median (95% CI) of 22.0% ("
+#              "2.24%-39.9%), 24.0% (15.0%-31.5%) and 25.7% (20.3%-31.1%) when co-administered with chloroquine, "
+#              "dihydroartemisinin/piperaquine and pyronaridine/artesunate, respectively. ")
+
+
+## Challenges
+["Verapamil increased the Cmax of simvastatin acid 3.4-fold (p < 0.001) and the AUC(0-24) 2.8-fold (p < 0.001).",
+ "On average, itraconazole increased the peak plasma concentration (Cmax) of felodipine nearly eightfold (p < 0.001), "
+ "the areas under the felodipine concentration-time curve  [AUC(0-32) and AUC(0-infinity)] about sixfold (p < 0.001), "
+ "and the elimination half-life twofold (p < 0.05).", "In contrast, erythromycin did not significantly affect the "
+                                                      "AUC(0-24) or half-life of either losartan or E3174. "
+ ]

@@ -45,33 +45,30 @@ def tag_additional(sentences, nlp_model):
     docs = list(nlp_model.pipe(texts))
     assert len(texts) == len(docs)
     for sentence, doc in zip(sentences, docs):
-
-
-        a=1
+        a = 1
 
     return sentences
 
 
 if __name__ == '__main__':
     base_dir = os.path.join("data", "all_sentences", "selected", "nocontext", "ready")
- #   file_train = "training.jsonl"
- #   file_test = "test.jsonl"
+    #   file_train = "training.jsonl"
+    #   file_test = "test.jsonl"
     out_path1 = os.path.join(base_dir, "training_tagged.jsonl")
     out_path2 = os.path.join(base_dir, "test_tagged.jsonl")
     # Load model and sentences
     nlp_extra = spacy.load(os.path.join("data", "pk_ner_supertok"))
- #   train_sentences = list(read_jsonl(os.path.join(base_dir, file_train)))
+    #   train_sentences = list(read_jsonl(os.path.join(base_dir, file_train)))
     train_sentences = list(read_jsonl(out_path1))
- #   nlp_drugs = spacy.load("en_ner_bc5cdr_md")
- #   out_sentences1 = tag_them(sentences=train_sentences, entities=["CHEMICAL", "DISEASE", "SPECIES"], nlp=nlp_drugs,
- #                             use_bern=True)
-    out_sentences1 = tag_additional(train_sentences,nlp_extra)
-    write_jsonl(out_path1, out_sentences1)
+    #   nlp_drugs = spacy.load("en_ner_bc5cdr_md")
+    #   out_sentences1 = tag_them(sentences=train_sentences, entities=["CHEMICAL", "DISEASE", "SPECIES"], nlp=nlp_drugs,
+    #                             use_bern=True)
+    out_sentences1 = tag_additional(train_sentences, nlp_extra)
+  #  write_jsonl(out_path1, out_sentences1)
 
- #   test_sentences = list(read_jsonl(os.path.join(base_dir, file_test)))
+    #   test_sentences = list(read_jsonl(os.path.join(base_dir, file_test)))
     test_sentences = list(read_jsonl(out_path2))
-    #out_sentences2 = tag_them(sentences=test_sentences, entities=["CHEMICAL", "DISEASE", "SPECIES"], nlp=nlp_drugs,
+    # out_sentences2 = tag_them(sentences=test_sentences, entities=["CHEMICAL", "DISEASE", "SPECIES"], nlp=nlp_drugs,
     #                          use_bern=True)
-    out_sentences2 = tag_additional(test_sentences,nlp_extra)
-    write_jsonl(out_path2, out_sentences2)
-
+    out_sentences2 = tag_additional(test_sentences, nlp_extra)
+   # write_jsonl(out_path2, out_sentences2)
