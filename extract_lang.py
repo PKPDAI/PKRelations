@@ -26,13 +26,19 @@ def get_relations(inp_sentence):
             retokenizer.merge(span)
 
     verbs = [verb for verb in doc_pk if verb.pos_ == "VERB"]
+
+    # if not any([tok in inp_sentence for tok in ["caused", "produced", "resulted"]]):
+    extra_verbs = [e_v for e_v in doc_pk if e_v.lower_ in ["increases", "decreases", "reduces", "alters"] and e_v.pos_ != "VERB"] # missed verbs
+    if extra_verbs:
+        verbs = verbs + extra_verbs
+
     relations = []
 
     # We extact relations of the type: (inducer_chemicals,relational_verb,pk_parameters,subject_chemicals)
 
     # 1. find the inducer chemical that will be related to the verb
     for verb in verbs:
-
+        weird_case = False
         # ======== 1. Add negation term if present ======================================= #
         relational_verb = verb
         # TODO: Add a condition depending on whether the verb is part of a list of key modifier verbs
@@ -44,16 +50,37 @@ def get_relations(inp_sentence):
                 relational_verb = Span(doc_pk, verb.i - 2, verb.i + 1)
                 print("========= HEY EXCEPTIONAL NEGATION: ", relational_verb)
 
+        if verb.lower_ in ["caused", "produced", "resulted"]:
+            for children in verb.children:
+                if children.dep_ == "dobj" and children.pos_ == "NOUN" and children.lower_ in ["increase",
+                                                                                               "decrease",
+                                                                                               "reduction",
+                                                                                               "variation",
+                                                                                               "alteration",
+                                                                                               "modification",
+                                                                                               "deduction"]:
+                    relational_verb = nlp_pk(relational_verb.text + " " + children.text)
+                    new_verb = children
+                    weird_case = True
+                    break
+
         # ======== 2. Find inducer chemical if present ============================================ #
         """Currently this process is not handling multiple inducers"""
+
         inducer_chemical = find_inducer(inp_verb=verb)
 
         # ======== 3. Find all the parameters related to the verb ========================= #
-        pk_parameters = find_parameters(inp_verb=verb, inp_doc=doc_pk)
+        if not weird_case:
+            pk_parameters = find_parameters(inp_verb=verb, inp_doc=doc_pk)
+        else:
+            pk_parameters = find_parameters(inp_verb=new_verb, inp_doc=doc_pk)
 
         # ======== 4. Find subject chemicals if present ============================================ #
-
-        subject_chemicals = find_subject(inp_parameters=pk_parameters, inp_verb=verb, inp_inducer=inducer_chemical)
+        if not weird_case:
+            subject_chemicals = find_subject(inp_parameters=pk_parameters, inp_verb=verb, inp_inducer=inducer_chemical)
+        else:
+            subject_chemicals = find_subject(inp_parameters=pk_parameters, inp_verb=new_verb,
+                                             inp_inducer=inducer_chemical)
 
         # ======== 5. Final tricks for when there is something missing ============================================ #
 
@@ -84,6 +111,12 @@ def extra_inducers(inp_inducer, inp_subjects):
         for children in inp_inducer.children:
             if children.ent_type_ == "CHEMICAL" and children.dep_ == "conj" and children not in inp_subjects:
                 inducer_chemicals.append(children)
+
+    if inducer_chemicals:
+        if inp_inducer.head.lower_ in ["co-administration", "administration"]:
+            for children in inp_inducer.head.children:
+                if children not in inducer_chemicals and children.ent_type_ == "CHEMICAL" and children.dep_ == "nmod":
+                    inducer_chemicals.append(children)
     return inducer_chemicals
 
 
@@ -296,6 +329,11 @@ def find_inducer(inp_verb):
                              superminichildren in minichildren.children]):  # ! and previous add!!
                         inducer_chemical = minichildren
 
+    if not inducer_chemical:
+        if inp_verb.head.pos_ == "VERB" and inp_verb.dep_ == "conj":
+
+
+
     return inducer_chemical
 
 
@@ -384,11 +422,9 @@ if __name__ == '__main__':
     nlp_pk = spacy.load("data/scispacy_ner")
     nlp_ch = spacy.load("en_ner_bc5cdr_md")
 
-    check0 = "Repeated administration of deramciclane doubled the AUC of desipramine ( P<0.001), while paroxetine " \
-             "caused " \ 
-             "a 4.8-fold increase in the AUC of desipramine ( P<0.001). "
+    check1 = "rifampicin pretreatment reduced the AUC of celecoxib by 64% and increased the clearance by 185%."
 
-    analyse_all(check0)
+    analyse_all(check1)
 
     inducers_example = "The volume of distribution of racemic primaquine was decreased by a median (95% CI) of 22.0% (" \
                        "2.24%-39.9%), 24.0% (15.0%-31.5%) and 25.7% (20.3%-31.1%) when co-administered with " \
@@ -463,6 +499,8 @@ morechecks = "Induction of cytochrome P450 3A by rifampin reduced the area under
 chkeck10 = "Similarly, the C(max) for amprenavir increased from 4193 ng/ml (95% CI 3927-4459 ng/ml) to 6621 ng/ml (95% CI 6427-6814 ng/ml) when given in combination with atazanavir."
 
 check11 = "* Short-term administration of low-dose ritonavir increases area under the plasma concentration curve following oral midazolam by a factor of 28."
+# TODO: PRoblem here is that increases is not detected as a verb but as a noun
+
 
 crashing = "When gefitinib was administered in the presence of itraconazole, gmean AUC increased by 78% and 61% at gefitinib doses of 250 and 500 mg, respectively; these changes also being statistically significant."
 
