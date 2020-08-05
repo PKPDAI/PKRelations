@@ -38,6 +38,7 @@ def get_relations(inp_sentence):
         # TODO: Add a condition depending on whether the verb is part of a list of key modifier verbs
         if doc_pk[verb.i - 1].text == "not":
             relational_verb = Span(doc_pk, verb.i - 1, verb.i + 1)
+
         else:
             if doc_pk[verb.i - 1].pos_ == 'ADV' and doc_pk[verb.i - 2].text == "not":  # e.g. "not significantly affect"
                 relational_verb = Span(doc_pk, verb.i - 2, verb.i + 1)
@@ -64,10 +65,26 @@ def get_relations(inp_sentence):
                                                                                               inp_doc_ch=doc_ch,
                                                                                               inp_relations=relations)
 
-        out_rel = (inducer_chemical, relational_verb, pk_parameters, subject_chemicals)
+        # ======== 6. Add extra inducers if present ============================================================= #
+
+        if inducer_chemical and subject_chemicals:
+            inducer_chemicals = extra_inducers(inp_inducer=inducer_chemical, inp_subjects=subject_chemicals)
+        else:
+            inducer_chemicals = [inducer_chemical]
+
+        out_rel = (inducer_chemicals, relational_verb, pk_parameters, subject_chemicals)
         relations.append(out_rel)
 
     return relations
+
+
+def extra_inducers(inp_inducer, inp_subjects):
+    inducer_chemicals = [inp_inducer]
+    if inp_inducer:
+        for children in inp_inducer.children:
+            if children.ent_type_ == "CHEMICAL" and children.dep_ == "conj" and children not in inp_subjects:
+                inducer_chemicals.append(children)
+    return inducer_chemicals
 
 
 def last_tricks(inp_presents, inp_potential, inp_doc_ch, inp_relations):
@@ -150,6 +167,7 @@ def find_subject(inp_parameters, inp_verb, inp_inducer):
                     for minichildren in children.children:
                         if minichildren.ent_type_ == "CHEMICAL" and minichildren.dep_ in ["amod", "case"]:
                             subject_chemical = minichildren
+
     if subject_chemical:
         subject_chemicals = [subject_chemical]
         for children in subject_chemical.children:
@@ -184,6 +202,29 @@ def find_parameters(inp_verb, inp_doc):
             except:
                 print("Some problem with verb location of the following (line 164):", inp_doc)
                 pk_parameters = []
+    if pk_parameters:
+        new_parameters = []
+        for parameter in pk_parameters:
+            for children in parameter.children:
+                if children.ent_type_ == "PK" and children.dep_ == "conj" and children not in pk_parameters:
+                    new_parameters.append(children)
+        pk_parameters = pk_parameters + new_parameters
+
+    # Find additional parameters pointing to that verb
+
+    if pk_parameters:
+        for children in inp_verb.children:
+            if children.pos_ != "VERB" and children.dep_ == "conj":
+                for minichildren in children.children:
+                    if minichildren.ent_type_ == "PK" and minichildren not in pk_parameters:
+                        pk_parameters.append(minichildren)
+
+                    else:
+                        if minichildren.pos_ == "DET":
+                            for tinychildren in minichildren.children:
+                                if tinychildren.ent_type_ == "PK" and tinychildren not in pk_parameters:
+                                    pk_parameters.append(tinychildren)
+
     return pk_parameters
 
 
@@ -191,9 +232,16 @@ def find_inducer(inp_verb):
     inducer_chemical = []
 
     for children in inp_verb.children:
-        if children.ent_type_ == "CHEMICAL":
-            if children.dep_ in ["nsubj", "dobj"]:
-                inducer_chemical = children
+        if children.ent_type_ == "CHEMICAL" and children.dep_ in ["nsubj", "dobj"]:
+            inducer_chemical = children
+
+    if not inducer_chemical:
+        for children in inp_verb.children:
+            if children.dep_ in ["nsubj", "dobj"] and children.ent_type_ != "PK":
+                if children.right_edge.ent_type_ == "CHEMICAL":
+                    inducer_chemical = children.right_edge
+                if children.left_edge.ent_type_ == "CHEMICAL":
+                    inducer_chemical = children.left_edge
 
     if not inducer_chemical:
         for children in inp_verb.children:
@@ -238,6 +286,16 @@ def find_inducer(inp_verb):
                 for minichildren in children.children:
                     if minichildren.ent_type_ == "CHEMICAL" and minichildren.dep_ in ["nmod"]:
                         inducer_chemical = minichildren
+
+    if not inducer_chemical:
+        for children in inp_verb.children:
+            if children.dep_ == "dobj":
+                for minichildren in children.children:
+                    if minichildren.ent_type_ == "CHEMICAL" and minichildren.dep_ == "nmod" and any(
+                            [superminichildren.text in ["by", "through"] and superminichildren.dep_ == "case" for
+                             superminichildren in minichildren.children]):  # ! and previous add!!
+                        inducer_chemical = minichildren
+
     return inducer_chemical
 
 
@@ -249,8 +307,8 @@ def analyse_all(sentence):
     print(sentence)
     print("============== Model extracted ========================")
     for rel in rels:
-        # print(rel[0], "|", rel[1], "| the |", rel[2], "| of |", rel[3])
-        print(rel[0], "|", rel[1], "|", rel[2], "|", rel[3])
+        if rel[1] and rel[2]:
+            print(rel[0], "|", rel[1], "|", rel[2], "|", rel[3])
     print("\n")
 
 
@@ -326,6 +384,17 @@ if __name__ == '__main__':
     nlp_pk = spacy.load("data/scispacy_ner")
     nlp_ch = spacy.load("en_ner_bc5cdr_md")
 
+    check0 = "Repeated administration of deramciclane doubled the AUC of desipramine ( P<0.001), while paroxetine " \
+             "caused " \ 
+             "a 4.8-fold increase in the AUC of desipramine ( P<0.001). "
+
+    analyse_all(check0)
+
+    inducers_example = "The volume of distribution of racemic primaquine was decreased by a median (95% CI) of 22.0% (" \
+                       "2.24%-39.9%), 24.0% (15.0%-31.5%) and 25.7% (20.3%-31.1%) when co-administered with " \
+                       "chloroquine, dihydroartemisinin/piperaquine and pyronaridine/artesunate, respectively."
+    analyse_all(inducers_example)
+
     analyse_all("In healthy male volunteers, mean Cmax and AUC(0-10 h) of cabergoline increased to a similar degree "
                 "during co-administration of clarithromycin.")
 
@@ -349,6 +418,52 @@ if __name__ == '__main__':
     for x in tqdm(sentences_rel):
         print_relations(x[0])
 
-inducer_example = "The volume of distribution of racemic primaquine was decreased by a median (95% CI) of 22.0% (" \
-                  "2.24%-39.9%), 24.0% (15.0%-31.5%) and 25.7% (20.3%-31.1%) when co-administered with chloroquine, " \
-                  "dihydroartemisinin/piperaquine and pyronaridine/artesunate, respectively. "
+check1 = "rifampicin pretreatment reduced the AUC of celecoxib by 64% and increased the clearance by 185%."
+
+check3 = "Repeated administration of deramciclane doubled the AUC of desipramine ( P<0.001), while paroxetine caused " \
+         "a 4.8-fold increase in the AUC of desipramine ( P<0.001)."
+# Bear in mind that it doesn't detect the first mention of deramciclane as a checmical
+
+check4 = "The bioavailability of omeprazole might, to some extent, be increased through inhibition of P-glycoprotein " \
+         "during fluvoxamine treatment. "
+
+check5 = "When gefitinib was administered in the presence of itraconazole, gmean AUC increased by 78% and 61% at " \
+         "gefitinib doses of 250 and 500 mg, respectively; these changes also being statistically significant. "
+
+cehck6 = "The mean area under the plasma concentration-time curve of cinacalcet increased 2.3-fold (90% CI 1.92, " \
+         "2.67)  [range 1.15- to 7.12-fold] and the mean maximum plasma concentration increased 2.2-fold (90% CI " \
+         "1.67, 2.78)  [range 0.904- to 10.8-fold] when administered with ketoconazole, relative to when administered " \
+         "alone. "
+
+check7 = "At steady state (day 10), co-administration of posaconazole with phenytoin resulted in 44% (p = 0.012) and " \
+         "52% (p = 0.007) decreases in posaconazole C(max) and AUC(0-24), respectively. "
+
+check8 = "Concurrent administration of ketoconazole with praziquantel significantly increased the mean area under the " \
+         "curve from time zero to infinity (AUC(0-alpha)) and maximum plasma concentration (Cmax) of praziquantel by " \
+         "93% (955.94 +/- 307.74 vs. 1843.10 +/- 336.39 ng h/mL; P < 0.01) and 102% (183.38 +/- 43.90 vs. 371.31 +/- " \
+         "44.63 ng/mL; P < 0.01), respectively, whereas the mean total clearance (CL/F) of praziquantel was " \
+         "significantly decreased by 58% (2.65 +/- 0.64 vs. 1.11 +/- 0.35 mL/h/kg; P < 0.01). "
+
+check9 = "Omeprazole treatment significantly increased the AUC(0-infinity) (41,387 ng h/mL, P = 0.004) and t1/2 (46.4 " \
+         "hours, P = 0.017) of R-warfarin in hmEMs to levels comparable to those in the PMs. "
+
+check10 = "When voriconazole was taken at the same time as oxycodone, the mean area under the plasma " \
+          "concentration-time curve (AUC(0-infinity)) of oxycodone increased 3.6-fold (range 2.7- to 5.6-fold), " \
+          "peak plasma concentration 1.7-fold and elimination half-life 2.0-fold (p < 0.001) when compared to placebo. "
+
+check20 = "Administration of quinine plus nevirapine resulted in significant decreases (P < 0.01) in the total area " \
+          "under the concentration-time curve (AUC(T)), maximum plasma concentration (C(max)) and terminal " \
+          "elimination half-life (T((1/2)beta)) of quinine compared with values with quinine dosing alone (AUC: 53.29 " \
+          "+/- 4.01 vs 35.48 +/- 2.01 h mg/l; C(max): 2.83 +/- 0.16 vs 1.81 +/- 0.06 mg/l; T((1/2)beta): 11.35 +/- " \
+          "0.72 vs 8.54 +/- 0.76 h), while the oral plasma clearance markedly increased (11.32 +/- 0.84 vs 16.97 +/- " \
+          "0.98 l/h). "
+
+morechecks = "Induction of cytochrome P450 3A by rifampin reduced the area under the oxycodone concentration-time curve of intravenous and oral oxycodone."
+
+chkeck10 = "Similarly, the C(max) for amprenavir increased from 4193 ng/ml (95% CI 3927-4459 ng/ml) to 6621 ng/ml (95% CI 6427-6814 ng/ml) when given in combination with atazanavir."
+
+check11 = "* Short-term administration of low-dose ritonavir increases area under the plasma concentration curve following oral midazolam by a factor of 28."
+
+crashing = "When gefitinib was administered in the presence of itraconazole, gmean AUC increased by 78% and 61% at gefitinib doses of 250 and 500 mg, respectively; these changes also being statistically significant."
+
+# TODO IMPORTANT CASE: "CAUSED A INCREASE" INCREASE becomes a noun and is therefore not iterated through
