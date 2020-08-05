@@ -7,6 +7,21 @@ from spacy import displacy
 from tqdm import tqdm
 from spacy.util import filter_spans
 
+#  TODO: !!!!!!!!!!!!!!!ANOTHER Idea is to start by finding the
+#  subject related to the parameter and then make the inducer conditional!!!!!!!!!!!!!!!! TODO:
+#   !!!!!!!!!!!!!!!ANOTHER Idea is to start by finding the subject related to the parameter and then make the inducer
+#   conditional!!!!!!!!!!!!!!!! TODO: !!!!!!!!!!!!!!!ANOTHER Idea is to start by finding the subject related to the
+#    parameter and then make the inducer conditional!!!!!!!!!!!!!!!!
+
+
+# # TODO Make all a bit more ordenated by doing
+"""
+1. Verbs and verb resolution
+2. PK parameter/parameters linked to the verb
+3. Find subject chemical linked to the parameter
+4. Complement with additional subject chemicals 
+5. Find inducer using all the above information and making sure there is no overlap
+"""
 
 def get_relations(inp_sentence):
     doc_pk = nlp_pk(inp_sentence)
@@ -28,7 +43,8 @@ def get_relations(inp_sentence):
     verbs = [verb for verb in doc_pk if verb.pos_ == "VERB"]
 
     # if not any([tok in inp_sentence for tok in ["caused", "produced", "resulted"]]):
-    extra_verbs = [e_v for e_v in doc_pk if e_v.lower_ in ["increases", "decreases", "reduces", "alters"] and e_v.pos_ != "VERB"] # missed verbs
+    extra_verbs = [e_v for e_v in doc_pk if
+                   e_v.lower_ in ["increases", "decreases", "reduces", "alters"] and e_v.pos_ != "VERB"]  # missed verbs
     if extra_verbs:
         verbs = verbs + extra_verbs
 
@@ -308,6 +324,15 @@ def find_inducer(inp_verb):
                                         minichildren.text in ["by", "through"]:  # by//through etc
                                     # check that there is no parameter between the verb and the chemical
                                     inducer_chemical = children
+            if not inducer_chemical:
+                for children in inp_verb.head.children:
+                    if children.dep_ in ["nsubj",
+                                         "dobj"] and children.left_edge.ent_type_ == "CHEMICAL" and children.ent_type_ != "PK":
+                        inducer_chemical = children.left_edge
+                    else:
+                        if children.dep_ in ["nsubj",
+                                             "dobj"] and children.right_edge.ent_type_ == "CHEMICAL" and children.ent_type_ != "PK":
+                            inducer_chemical = children.right_edge
 
     if not inducer_chemical:
         for children in inp_verb.children:
@@ -328,11 +353,6 @@ def find_inducer(inp_verb):
                             [superminichildren.text in ["by", "through"] and superminichildren.dep_ == "case" for
                              superminichildren in minichildren.children]):  # ! and previous add!!
                         inducer_chemical = minichildren
-
-    if not inducer_chemical:
-        if inp_verb.head.pos_ == "VERB" and inp_verb.dep_ == "conj":
-
-
 
     return inducer_chemical
 
@@ -505,3 +525,7 @@ check11 = "* Short-term administration of low-dose ritonavir increases area unde
 crashing = "When gefitinib was administered in the presence of itraconazole, gmean AUC increased by 78% and 61% at gefitinib doses of 250 and 500 mg, respectively; these changes also being statistically significant."
 
 # TODO IMPORTANT CASE: "CAUSED A INCREASE" INCREASE becomes a noun and is therefore not iterated through
+
+
+others = "Concomitant administration of HCQ increased the bioavailability of metoprolol, as indicated by significant increases in the area under the plasma concentration-time curve (65 +/- 4.6%) and maximal plasma concentrations (72 +/- 6.9%) of metoprolol."
+# TODO: debate whether the one above has anything wrong?
