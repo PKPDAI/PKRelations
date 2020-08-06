@@ -64,7 +64,7 @@ if __name__ == '__main__':
     pattern = [{'LIKE_NUM': True}]
     pattern1 = [{'LIKE_NUM': True}, {'ORTH': {'IN': ["^-", "^", "(-"]}}, {'LIKE_NUM': True}]
     pattern12 = [{'LIKE_NUM': True}, {'IS_ASCII': False}, {'LIKE_NUM': True}]
-    pattern2 = [{'LOWER': {"IN": ["mean", "median", "population", "individual", "estimated", "std", "+-"]}}]
+    pattern2 = [{'LOWER': {"IN": ["mean", "median", "population", "individual", "estimated", "std", "+-", "sem"]}}]
 
     entity_matcher = EntityMatcher(nlp, [[pattern1, pattern12, pattern], [pattern2]], ["VALUE", "TYPE_MEAS"])
     nlp.add_pipe(entity_matcher, last=True)
