@@ -71,12 +71,18 @@ def get_relations(inp_sentence):
         if verb.lower_ in ["caused", "produced", "resulted"]:
             for children in verb.children:
                 if children.dep_ == "dobj" and children.pos_ == "NOUN" and children.lower_ in ["increase",
+                                                                                               "increases",
                                                                                                "decrease",
+                                                                                               "decreases",
                                                                                                "reduction",
+                                                                                               "reductions",
                                                                                                "variation",
+                                                                                               "variations",
                                                                                                "alteration",
+                                                                                               "alterations",
                                                                                                "modification",
-                                                                                               "deduction"]:
+                                                                                               "modifications",
+                                                                                               "deductions"]:
                     relational_verb = nlp_pk(relational_verb.text + " " + children.text)
                     new_verb = children
                     weird_case = True
@@ -374,8 +380,8 @@ def find_inducer(inp_verb, inp_subjects, inp_parameters):
                 # of mitoxantrone and etopside was decreased by 64% and 60%, respectively, when combined with
                 # valspodar
                 for minichildren in children.children:
-                    if minichildren.ent_type_ == "CHEMICAL" and minichildren.dep_ in [
-                        "nmod"] and minichildren.lower_ not in inp_subjects_text:
+                    if minichildren.ent_type_ == "CHEMICAL" and minichildren.dep_ in ["nmod"] and\
+                            minichildren.lower_ not in inp_subjects_text:
                         inducer_chemical = minichildren
 
     if not inducer_chemical:
@@ -394,12 +400,12 @@ def find_inducer(inp_verb, inp_subjects, inp_parameters):
 # doc = nlp(sentences_rel[323][0])
 
 def analyse_all(sentence):
-    rels = get_relations(sentence)
     print("============== Original sentence ========================")
     print(sentence)
+    rels = get_relations(sentence)
     print("============== Model extracted ========================")
     for rel in rels:
-        if rel[1] and rel[2]:
+        if rel[1] and rel[2]:  # and rel[0] and rel[3] and ['[]'] not in rel:
             print(rel[0], "|", rel[1], "|", rel[2], "|", rel[3])
     print("\n")
     return rels
@@ -431,12 +437,12 @@ def get_sdp_path(doc, subj, obj, lca_matrix):
 
 def print_relations(sentence):
     rels = get_relations(sentence)
+    print("============== Original sentence ========================")
+    print(sentence)
 
     for rel in rels:
         presents = [True if token else False for token in rel]
         if sum(presents) == 4:
-            print("============== Original sentence ========================")
-            print(sentence)
             print("============== Model extracted ========================")
             print(rel[0], "|", rel[1], "|", rel[2], "|", rel[3])
             print("\n")
@@ -474,48 +480,15 @@ if __name__ == '__main__':
                            element.findAll("cons", {"sem": "G_CHANGE"})]))
 
     # nlp = spacy.load("en_core_sci_lg")
-
-    check1 = "Itraconazole affected the pharmacokinetic parameters of S-fexofenadine more, and increased AUC(0," \
-             "24 h) of S-fexofenadine and R-fexofenadine by 4.0-fold (95% CI of differences 2.8, 5.3; P < 0.001) and " \
-             "by 3.1-fold (95% CI of differences 2.2, 4.0; P = 0.014), respectively, and Ae(0,24 h) of S-fexofenadine " \
-             "and R-fexofenadine by 3.6-fold (95% CI of differences 2.6, 4.5; P < 0.001) and by 2.9-fold (95% CI of " \
-             "differences 2.1, 3.8; P < 0.001), respectively. "
-
-    analyse_all(check1)
-
-    inducers_example = "The volume of distribution of racemic primaquine was decreased by a median (95% CI) of 22.0% (" \
-                       "2.24%-39.9%), 24.0% (15.0%-31.5%) and 25.7% (20.3%-31.1%) when co-administered with " \
-                       "chloroquine, dihydroartemisinin/piperaquine and pyronaridine/artesunate, respectively."
-    analyse_all(inducers_example)
-
-    analyse_all("In healthy male volunteers, mean Cmax and AUC(0-10 h) of cabergoline increased to a similar degree "
-                "during co-administration of clarithromycin.")
-
-    analyse_all("The clearance of mitoxantrone and etopside was decreased by 64% and 60%, respectively, when combined "
-                "with valspodar")
-    analyse_all(sentences_rel[323][0])
-    analyse_all(sentences_rel[324][0])
-    analyse_all(sentences_rel[4][0])
-    analyse_all(sentences_rel[5][0])
-    analyse_all(sentences_rel[8][0])
-    analyse_all("Midazolam increased the AUC of amoxicillin")
-    analyse_all("Midazolam's AUC was increased by amoxicillin")
-    analyse_all("Midazolam's AUC was increased through amoxicillin administration")
-    analyse_all("The clearance of mitoxantrone and etopside was decreased by 64% and 60%, respectively, when combined "
-                "with valspodar")
-    analyse_all("The bioavailability of oral ondansetron was reduced from 60% to 40% (P<.01) by rifampin")
-    analyse_all("The volume of distribution of racemic primaquine was decreased by a median (95% CI) of 22.0% ("
-                "2.24%-39.9%), 24.0% (15.0%-31.5%) and 25.7% (20.3%-31.1%) when co-administered with chloroquine, "
-                "dihydroartemisinin/piperaquine and pyronaridine/artesunate, respectively. ")
-
-    for x in tqdm(sentences_rel):
-        print_relations(x[0])
+    for i, x in enumerate(tqdm(sentences_rel)):
+        print("======== ", i, " ========")
+        analyse_all(x[0])
 
 check1 = "rifampicin pretreatment reduced the AUC of celecoxib by 64% and increased the clearance by 185%."
 
 check3 = "Repeated administration of deramciclane doubled the AUC of desipramine ( P<0.001), while paroxetine caused " \
          "a 4.8-fold increase in the AUC of desipramine ( P<0.001)."
-# Bear in mind that it doesn't detect the first mention of deramciclane as a checmical
+# Bear in mind that it doesn't detect the first mention of deramciclane as a chemical
 
 check4 = "The bioavailability of omeprazole might, to some extent, be increased through inhibition of P-glycoprotein " \
          "during fluvoxamine treatment. "
