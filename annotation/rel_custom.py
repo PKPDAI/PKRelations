@@ -1,5 +1,5 @@
 from prodigy.util import get_labels, split_string
-from typing import List, Optional, Union, Iterable, Dict, Any
+from typing import List, Optional, Union, Iterable
 import prodigy
 from prodigy.recipes.rel import manual as rel_manual
 
@@ -10,8 +10,12 @@ from prodigy.recipes.rel import manual as rel_manual
     spacy_model=("Loadable spaCy model or blank:lang (e.g. blank:en)", "positional", None, str),
     source=("Data to annotate (file path or '-' to read from standard input)", "positional", None, str),
     loader=("Loader (guessed from file extension if not set)", "option", "lo", str),
-    label=("Comma-separated relation label(s) to annotate or text file with one label per line", "option", "l", get_labels),
-    span_label=("Comma-separated span label(s) to annotate or text file with one label per line", "option", "sl", get_labels),
+    label=(
+            "Comma-separated relation label(s) to annotate or text file with one label per line", "option", "l",
+            get_labels),
+    span_label=(
+            "Comma-separated span label(s) to annotate or text file with one label per line", "option", "sl",
+            get_labels),
     patterns=("Patterns file for defining custom spans to be added", "option", "pt", str),
     disable_patterns=("Patterns file for defining tokens to disable (make unselectable)", "option", "dpt", str),
     add_ents=("Add entities predicted by the model", "flag", "AE", bool),
@@ -57,18 +61,16 @@ def validate_answer(eg):
         head_label = relation['head_span']['label']
         child_label = relation['child_span']['label']
         rel_type = relation['label']
-        assert (head_label, child_label) in mapit[rel_type]
-
-    selected = eg.get("accept", [])
-    print(eg['relations'])
-    # assert 1 <= len(selected) <= 3, "Select at least 1 but not more than 3 options."
-    print("HIIIIIIIIII")
-
-
+        is_valid = (head_label, child_label) in valid_relations[rel_type]
+        error_messages = []
+        if not is_valid:
+            error_messages.append("You can't assigne a relation type -" + rel_type + "between: " + head_label +"-",child_label)
+    if error_messages:
+        raise ValueError("\n".join(error_messages))
 
 
 
-mapit = {
+valid_relations = {
     "C_VAL": [("PK", "VALUE")],
     "C_MIN": [("PK", "VALUE")],
     "C_MAX": [("PK", "VALUE")],
