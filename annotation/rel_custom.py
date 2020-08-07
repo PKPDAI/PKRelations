@@ -57,17 +57,17 @@ def custom_rel_manual(dataset: str,
 
 
 def validate_answer(eg):
+    error_messages = []
     for relation in eg['relations']:
         head_label = relation['head_span']['label']
         child_label = relation['child_span']['label']
         rel_type = relation['label']
         is_valid = (head_label, child_label) in valid_relations[rel_type]
-        error_messages = []
         if not is_valid:
-            error_messages.append("You can't assigne a relation type -" + rel_type + "between: " + head_label +"-",child_label)
+            error_messages.append(
+                "You can't assign a relation type " + rel_type + " between: " + head_label + "-" + child_label)
     if error_messages:
-        raise ValueError("\n".join(error_messages))
-
+        raise ValueError("\n".join(error_messages) + "\n check the guidelines!")
 
 
 valid_relations = {

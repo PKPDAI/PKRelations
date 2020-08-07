@@ -269,7 +269,14 @@
       <option name="project" value="LOCAL" />
       <updated>1596829473448</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="added testing">
+      <created>1596830600132</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1596830600133</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -292,11 +299,11 @@
     </state>
     <state x="2338" y="189" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1596734455298" />
     <state x="418" y="211" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.27.1920.1053@0.27.1920.1053" timestamp="1595609389162" />
-    <state x="523" y="68" width="864" height="1003" key="CommitChangelistDialog2" timestamp="1596829473276">
+    <state x="523" y="68" width="864" height="1003" key="CommitChangelistDialog2" timestamp="1596830600068">
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
     <state x="2443" y="42" width="864" height="1003" key="CommitChangelistDialog2/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1596735044691" />
-    <state x="523" y="68" key="CommitChangelistDialog2/0.27.1920.1053@0.27.1920.1053" timestamp="1596829473276" />
+    <state x="523" y="68" width="864" height="1003" key="CommitChangelistDialog2/0.27.1920.1053@0.27.1920.1053" timestamp="1596830600068" />
     <state x="2663" y="291" width="424" height="491" key="FileChooserDialogImpl" timestamp="1596015202366">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -358,15 +365,16 @@
     <state width="1874" height="309" key="GridCell.Tab.1.right/0.27.1920.1053/1920.0.1920.1080@0.27.1920.1053" timestamp="1596619114829" />
     <state width="1874" height="326" key="GridCell.Tab.1.right/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1596738005272" />
     <state width="904" height="306" key="GridCell.Tab.1.right/0.27.1920.1053@0.27.1920.1053" timestamp="1596058242023" />
-    <state x="2475" y="272" width="800" height="543" key="Vcs.Push.Dialog.v2" timestamp="1596735047851">
-      <screen x="1920" y="0" width="1920" height="1080" />
+    <state x="555" y="292" width="800" height="543" key="Vcs.Push.Dialog.v2" timestamp="1596830614046">
+      <screen x="0" y="27" width="1920" height="1053" />
     </state>
     <state x="2475" y="272" width="800" height="543" key="Vcs.Push.Dialog.v2/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1596735047851" />
-    <state x="623" y="260" width="672" height="662" key="search.everywhere.popup" timestamp="1596829470462">
+    <state x="555" y="292" key="Vcs.Push.Dialog.v2/0.27.1920.1053@0.27.1920.1053" timestamp="1596830614046" />
+    <state x="623" y="260" width="672" height="662" key="search.everywhere.popup" timestamp="1596830611718">
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
     <state x="2543" y="239" width="672" height="678" key="search.everywhere.popup/0.27.1920.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1596735046726" />
-    <state x="623" y="260" width="672" height="662" key="search.everywhere.popup/0.27.1920.1053@0.27.1920.1053" timestamp="1596829470462" />
+    <state x="623" y="260" width="672" height="662" key="search.everywhere.popup/0.27.1920.1053@0.27.1920.1053" timestamp="1596830611718" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
