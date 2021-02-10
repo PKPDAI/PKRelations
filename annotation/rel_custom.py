@@ -65,9 +65,9 @@ def validate_answer(eg):
         is_valid = (head_label, child_label) in valid_relations[rel_type]
         if not is_valid:
             error_messages.append(
-                "You can't assign a relation type " + rel_type + " between: " + head_label + "-" + child_label)
+                "Careful!, you can't assign a relation type " + rel_type + " between: " + head_label + "-" + child_label)
     if error_messages:
-        raise ValueError("\n".join(error_messages) + "\n check the guidelines!")
+        raise ValueError("\n".join(error_messages))
 
 
 valid_relations = {

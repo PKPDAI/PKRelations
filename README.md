@@ -1,6 +1,22 @@
 # PKRelations
 
-#### Types of entities:
+## 1. Getting pool of sentences ready for annotations
+
+From all the relevant PK papers we selected sentence with.....
+
+
+## 2. Performing initial NER
+
+* The entities we are looking for are: 
+
+- For x we did y....
+
+## 3. Prodigy interface for annotations
+
+
+## 4. Model development
+
+## Types of entities:
 
 1. **PK**: Mention of a pharmacokinetic parameter 
 

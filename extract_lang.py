@@ -7,14 +7,8 @@ from spacy import displacy
 from tqdm import tqdm
 from spacy.util import filter_spans
 
-#  TODO: !!!!!!!!!!!!!!!ANOTHER Idea is to start by finding the
-#  subject related to the parameter and then make the inducer conditional!!!!!!!!!!!!!!!! TODO:
-#   !!!!!!!!!!!!!!!ANOTHER Idea is to start by finding the subject related to the parameter and then make the inducer
-#   conditional!!!!!!!!!!!!!!!! TODO: !!!!!!!!!!!!!!!ANOTHER Idea is to start by finding the subject related to the
-#    parameter and then make the inducer conditional!!!!!!!!!!!!!!!!
+#  TODO: ANOTHER Idea is to start by finding thesubject related to the parameter and then make the inducer conditional
 
-
-# # TODO Make all a bit more ordered by doing:
 """
 1. Verbs and verb resolution
 2. PK parameter/parameters linked to the verb

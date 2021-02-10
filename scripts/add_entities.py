@@ -51,13 +51,13 @@ def tag_additional(sentences, nlp_model):
 
 
 if __name__ == '__main__':
-    base_dir = os.path.join("data", "all_sentences", "selected", "nocontext", "ready")
+    base_dir = os.path.join("../data", "all_sentences", "selected", "nocontext", "ready")
     #   file_train = "training.jsonl"
     #   file_test = "test.jsonl"
     out_path1 = os.path.join(base_dir, "training_tagged.jsonl")
     out_path2 = os.path.join(base_dir, "test_tagged.jsonl")
     # Load model and sentences
-    nlp_extra = spacy.load(os.path.join("data", "pk_ner_supertok"))
+    nlp_extra = spacy.load(os.path.join("../data", "pk_ner_supertok"))
     #   train_sentences = list(read_jsonl(os.path.join(base_dir, file_train)))
     train_sentences = list(read_jsonl(out_path1))
     #   nlp_drugs = spacy.load("en_ner_bc5cdr_md")
