@@ -75,3 +75,4 @@ cython_debug/
 # idea
 /.idea
 /prodigy-*.whl
+/data/

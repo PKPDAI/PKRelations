@@ -1,20 +1,39 @@
 # PKRelations
 
-## 1. Getting pool of sentences ready for annotations
+## 1. Getting pool of sentences ready for annotations and performing initial NER
 
 From all the relevant PK papers we selected sentence with.....
 
+````
+python scripts/select_relevant_sentences.py \
+   --path-model data/models/pk_ner_supertok \
+   --path-ner-dict data/dictionaries/terms.json \
+   --path-pmid data/all_sentences/pmids \
+   --path-pmc data/data/all_sentences/raw/all_sentences.jsonl \
+   --out-dir data/all_sentences/selected/clean
+````
 
-## 2. Performing initial NER
+**TODO:** make sure pmids don't overlap with pmcs and that pmids are just the relevant ones (there seem to be many)
 
-* The entities we are looking for are: 
+### Split from main pool:
 
-- For x we did y....
+````
+python scripts/split_sentences.py \
+   --path-jsonl-pmids data/models/pk_ner_supertok \
+   --path-jsonl-pmcs data/dictionaries/terms.json \
+   --slice-sizes 1000,20 \
+   --slice-names rex-pilot,rex-minipilot \
+   --out-dir data/gold/
+````
 
-## 3. Prodigy interface for annotations
+## 2. Prodigy interface for annotations
 
+````
+prodigy custom.rel.manual rel_trials_Simon_1108 en_core_sci_lg training_tagged.jsonl --label C_VAL,D_VAL,RELATED,DOSAGE,C_MIN,C_MAX,D_MIN,D_MAX,COMPLEMENT --wrap --span-label UNITS,COVARIATES,COMPARATIVE,TYPE_MEAS,VALUE,PK,DISEASES,SPECIES,CHEMICAL,ROUTE --add-ents --wrap -F rel_custom.py
 
-## 4. Model development
+````
+
+## 3. Model development
 
 ## Types of entities:
 
