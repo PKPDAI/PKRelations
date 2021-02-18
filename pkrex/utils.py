@@ -9,6 +9,7 @@ from spacy.tokens import Span
 from itertools import groupby
 import ujson
 from pathlib import Path
+from spacy.pipeline import EntityRuler
 
 
 def contains_digit(sentence):
@@ -51,11 +52,12 @@ def has_pk(inp_doc):
     return False
 
 
-class EntityMatcher(object):
-    name = "entity_matcher"
+class TokenEntityMatcher(object):
+    name = "token_entity_matcher"
 
     def __init__(self, nlp, pattern_list, labels):
         self.matcher = Matcher(nlp.vocab)
+        # self.matcher = PhraseMatcher(nlp.vocab)
         for patterns, label in zip(pattern_list, labels):
             self.matcher.add(label, None, *patterns)
         self.vocab = nlp.vocab
@@ -99,20 +101,66 @@ class EntityMatcher(object):
         return False
 
 
-def make_nlp_pk_route_ner(dictionaries_path: str, pk_ner_path: str):
+# @Language.component("get_range_entity")
+def get_range_entity(doc):
+    new_ents = []
+    for i, ent in enumerate(doc.ents):
+        if (ent.label_ == "VALUE") and (ent.end + 2 <= len(doc)) and (i < len(doc.ents)):
+            next_token = doc[ent.end]
+            next_next_token = doc[ent.end + 1]
+            if next_token.text in ("-", "to", "\u2012", "\u2013", "\u2014", "\u2015", ) and next_next_token.ent_type_ == "VALUE":
+                new_ent = Span(doc, ent.start, doc.ents[i + 1].end, label="RANGE")
+                new_ents.append(new_ent)
+            else:
+                new_ents.append(ent)
+        else:
+            new_ents.append(ent)
+    doc.ents = filter_spans(new_ents)  # resolve overlapping
+    return doc
+
+
+def make_super_tagger(dictionaries_path: str, pk_ner_path: str):
     """Gets nlp model that does PK NER and adds rules for detecting VALUES, TYPE_MEASUREMENTS, ROUTES and RANGES"""
 
     with open(dictionaries_path) as f:
         patterns_dict = json.load(f)
-    pattern = [{'LIKE_NUM': True}, {'ORTH': {'IN': ["^-", "^", "(-", "^\u2212"]}}, {'LIKE_NUM': True}]
-    pattern1 = [{'LIKE_NUM': True}]
-    pattern2 = [{'LOWER': {"IN": patterns_dict['TYPE_MEAS']}}]
-    pattern3 = [{"LOWER": {"IN": patterns_dict['ROUTE']}}]
-    pattern4 = [{'ORTH': "intra"}, {'ORTH': "-"}, {}]
+
     nlp = spacy.load(pk_ner_path)
-    entity_matcher = EntityMatcher(nlp, [[pattern, pattern1], [pattern2], [pattern3, pattern4]], ["VALUE", "TYPE_MEAS",
-                                                                                                  "ROUTE"])
-    nlp.add_pipe(component=entity_matcher, name='entity_matcher', after='ner')
+
+    # patterns
+
+    value_patterns = [{"label": "VALUE",
+                       "pattern": [{'LIKE_NUM': True}, {'ORTH': {'IN': ["^-", "^", "(-", "^\u2212"]}},
+                                   {'LIKE_NUM': True}]
+                       },
+
+                      {"label": "VALUE",
+                       "pattern": [{'LIKE_NUM': True}, {'ORTH': "e"}, {'ORTH': '-'},
+                                   {'LIKE_NUM': True}]
+                       },
+
+                      {"label": "VALUE",
+                       "pattern": [{'LIKE_NUM': True}]
+                       }
+                      ]
+
+    type_meas_patterns = [{"label": "TYPE_MEAS", "pattern": term} for term in patterns_dict["TYPE_MEAS"]]
+
+    comparative_patterns = [{"label": "COMPARE",
+                             "pattern": term} for term in patterns_dict["COMPARE"]]
+
+    route_patterns = [{"label": "ROUTE", "pattern": term} for term in patterns_dict["ROUTE"]]
+    route_patterns = route_patterns + [{
+        "label": "ROUTE",
+        "pattern": [{'ORTH': "intra"}, {'ORTH': "-"}, {}]
+    }]
+
+    all_patterns = value_patterns + type_meas_patterns + route_patterns + comparative_patterns  # + range_patterns
+
+    ruler = EntityRuler(nlp, phrase_matcher_attr="LOWER")
+    ruler.add_patterns(all_patterns)
+    nlp.add_pipe(ruler)
+    nlp.add_pipe(get_range_entity, last=True)
     return nlp
 
 

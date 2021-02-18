@@ -2,7 +2,7 @@
 import argparse
 import os
 from tqdm import tqdm
-from pkrex.utils import clean_html, make_nlp_pk_route_ner, arrange_pk_sentences_abstract_context, read_jsonl, \
+from pkrex.utils import clean_html, make_super_tagger, arrange_pk_sentences_abstract_context, read_jsonl, \
     write_jsonl, check_to_keep, arrange_pk_sentences_pmc_context
 import hashlib
 
@@ -72,7 +72,7 @@ def filter_pmc_articles(inp_path: str, inp_model: str, output_path: str):
 
 
 def run(path_model: str, path_ner_dict: str, path_pmid: str, path_pmc: str, out_dir: str):
-    spacy_model = make_nlp_pk_route_ner(dictionaries_path=path_ner_dict, pk_ner_path=path_model)
+    spacy_model = make_super_tagger(dictionaries_path=path_ner_dict, pk_ner_path=path_model)
 
     # out_pmid_path = os.path.join(out_dir, 'all_selected_pmid.jsonl')
     # print('Planning to write to: {}'.format(out_pmid_path))

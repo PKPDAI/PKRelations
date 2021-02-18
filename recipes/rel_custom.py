@@ -51,16 +51,31 @@ def custom_rel_manual(dataset: str,
         add_nps=add_nps,
         wrap=wrap,
         hide_arrow_heads=hide_arrow_heads, )
+
     # Add callback to the components returned by the recipe
     components["validate_answer"] = validate_answer
-    components["config"]["global_css"] = ".prodigy-buttons button:nth-child(2) {display: none;}"
+    components["config"]["global_css"] = ".prodigy-button-reject, .prodigy-button-ignore {display: none}"
     components["config"]["custom_theme"]["labels"] = {
         "PK": "#ffa9b8",
         "VALUE": "#d1caff",
         "UNITS": "#00ffff",
         "TYPE_MEAS": "#ffa973",
-        "COMPARATIVE": "#9effd6"
+        "COMPARE": "#9effd6",
+        "RANGE": "#66f542"
     }
+    components["config"]["instructions"] = "./recipes/instructions.html"
+    components["config"]["batch_size"] = 5
+    components["config"]["history_size"] = 5
+    components["config"]["show_flag"] = True
+    # ===== Add block for comments ===== #
+    blocks = [
+        {"view_id": components['view_id']},
+        {"view_id": "text_input", "field_rows": 3, "field_label": "Write any comments here"}
+    ]
+    components['view_id'] = 'blocks'
+    components['config']['blocks'] = blocks
+    components['stream'] = list(components['stream'])
+
     return components
 
 
@@ -79,31 +94,18 @@ def validate_answer(eg):
 
 
 valid_relations = {
-    "C_VAL": [("PK", "VALUE")],
-    "C_MIN": [("PK", "VALUE")],
-    "C_MAX": [("PK", "VALUE")],
-    "D_VAL": [("VALUE", "VALUE")],
-    "D_MIN": [("VALUE", "VALUE")],
-    "D_MAX": [("VALUE", "VALUE")],
-    "DOSAGE": [("VALUE", "VALUE")],
-    "COMPLEMENT": [("COVARIATES", "COVARIATES")],
-    "RELATED": [("TYPE_MEAS", "VALUE"), ("COMPARATIVE", "VALUE"), ("SPECIES", "VALUE"), ("CHEMICAL", "VALUE"),
-                ("DISEASES", "VALUE"), ("UNITS", "VALUE"), ("COVARIATES", "VALUE"), ("ROUTE", "VALUE")]
-}
+    "C_VAL": [("PK", "VALUE"), ("PK", "RANGE")],
+    "D_VAL": [("VALUE", "VALUE"), ("RANGE", "RANGE"), ("RANGE", "VALUE"), ("VALUE", "RANGE")],
+    "RELATED": [("TYPE_MEAS", "VALUE"), ("COMPARE", "VALUE"), ("SPECIES", "VALUE"), ("CHEMICAL", "VALUE"),
+                ("DISEASES", "VALUE"), ("UNITS", "VALUE"), ("COVARIATES", "VALUE"), ("ROUTE", "VALUE"),
+                ("TYPE_MEAS", "RANGE"), ("COMPARE", "RANGE"), ("SPECIES", "RANGE"), ("CHEMICAL", "RANGE"),
+                ("DISEASES", "RANGE"), ("UNITS", "RANGE"), ("COVARIATES", "RANGE"), ("ROUTE", "RANGE")]
 
-# "custom_theme": {
-#    "labels": {
-#      "A": "#66f542",
-#      "B": "#ff4824"
-#    },
-#  }
+    # "D_MIN": [("VALUE", "VALUE")],
+    # "D_MAX": [("VALUE", "VALUE")],
+    # "DOSAGE": [("VALUE", "VALUE")],
+    # "COMPLEMENT": [("COVARIATES", "COVARIATES")],
+    # "C_MIN": [("PK", "VALUE")],
+    # "C_MAX": [("PK", "VALUE")],
 
-{
-    "custom_theme": {
-        "labels": {
-            "VERB": "#ffa9b8",
-            "PERSON": "#d1caff",
-            "COREF": "#00ffff"
-        }
-    }
 }

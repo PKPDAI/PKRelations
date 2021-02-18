@@ -1,0 +1,20 @@
+{
+  "theme": "basic",
+  "host": "localhost",
+  "cors": true,
+  "db": "sqlite",
+  "db_settings": {},
+  "api_keys": {},
+  "validate": true,
+  "auto_exclude_current": true,
+  "instant_submit": false,
+  "feed_overlap": true,
+  "force_stream_order": true,
+  "ui_lang": "en",
+  "project_info": ["dataset", "session",  "label"],
+  "swipe": false,
+  "swipe_gestures": { "left": "accept", "right": "reject" },
+  "split_sents_threshold": false,
+  "writing_dir": "ltr",
+  "show_whitespace": false
+}

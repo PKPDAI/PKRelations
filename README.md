@@ -26,6 +26,37 @@ python scripts/split_sentences.py \
    --out-dir data/gold/
 ````
 
+### Re-tag some file that was already tagged:
+
+````
+python scripts/rematch_jsonl.py \
+   --path-inp-file data/gold/rex-minipilot.jsonl \
+   --path-out-file data/gold/rex-minipilot2.jsonl \
+   --path-base-model data/models/pk_ner_supertok \
+   --path-ner-dict data/dictionaries/terms.json
+   
+````
+
+
+### Create multiple datasets from single jsonl for review
+
+1. Run this: 
+````
+python scripts/split_annotations.py \
+   --azure-file-name rex-pilot-ferran-output.jsonl \
+   --save-local False
+   
+````
+
+2. Launch review: 
+
+For instance:
+
+````
+prodigy review table-trials-1-review tableclass-trials-1-ferran,tableclass-trials-1-frank,tableclass-trials-1-gill,tableclass-trials-1-joe --view-id choice
+   
+````
+
 ## 2. Prodigy interface for annotations
 
 ````

@@ -1,7 +1,7 @@
 """This script makes all the data needed to subset potential sentences for relation extraction"""
 import argparse
 from typing import List
-from prodigy.util import read_jsonl, write_jsonl
+from pkrex.utils import read_jsonl, write_jsonl
 import os
 import random
 from tqdm import tqdm
