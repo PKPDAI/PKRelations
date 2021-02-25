@@ -102,7 +102,7 @@ def get_combinations(
 
 
 if __name__ == '__main__':
-    inp_file_path = os.path.join("data", "pkddi", "invivo_train.xml")
+    inp_file_path = os.path.join("../../data", "pkddi", "invivo_train.xml")
 
     with open(inp_file_path) as infile:
         soup = BeautifulSoup(infile)

@@ -60,7 +60,7 @@ class EntityMatcher(object):
 
 
 if __name__ == '__main__':
-    nlp = spacy.load(os.path.join("data", "pk_ner_supertok"))
+    nlp = spacy.load(os.path.join("../../data", "pk_ner_supertok"))
     pattern = [{'LIKE_NUM': True}]
     pattern1 = [{'LIKE_NUM': True}, {'ORTH': {'IN': ["^-", "^", "(-", "^\u2212"]}}, {'LIKE_NUM': True}]
     # pattern12 = [{'LIKE_NUM': True}, {'IS_ASCII': False}, {'LIKE_NUM': True}]

@@ -8,13 +8,14 @@
   "validate": true,
   "auto_exclude_current": true,
   "instant_submit": false,
-  "feed_overlap": true,
-  "force_stream_order": true,
+  "feed_overlap": false,
+  "force_stream_order": false,
   "ui_lang": "en",
   "project_info": ["dataset", "session",  "label"],
   "swipe": false,
   "swipe_gestures": { "left": "accept", "right": "reject" },
   "split_sents_threshold": false,
   "writing_dir": "ltr",
-  "show_whitespace": false
+  "show_whitespace": false,
+  "relations_span_labels": ["UNITS","PK","TYPE_MEAS","COMPARE","RANGE","VALUE"]
 }

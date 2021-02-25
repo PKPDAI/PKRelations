@@ -1,4 +1,5 @@
-"""This is used to extract a simpler spaCy model that only has the tokenizer give an input model"""
+"""This is used to extract a simpler spaCy model that only has the tokenizer give an input model with several
+components: Tokenizer, POS tagging, NER etc """
 import argparse
 import spacy
 
@@ -7,7 +8,7 @@ def run(path_base_model: str, out_dir: str, out_model_name: str):
     base_model = spacy.load(path_base_model)
     blank_model = spacy.blank('en')
     blank_model.tokenizer = base_model.tokenizer
-    #new_name = 'tokenizer_'+path_base_model.split('/')[-1]
+    # new_name = 'tokenizer_'+path_base_model.split('/')[-1]
 
     blank_model.meta['name'] = out_model_name
     blank_model.to_disk(out_dir + out_model_name)

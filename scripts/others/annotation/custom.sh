@@ -1,2 +1,2 @@
-#prodigy sentiment customtrial ../data/all_sentences/selected/nocontext/ready/training_tagged.jsonl -F recipe.py
+#prodigy sentiment customtrial ../data/raw/selected/nocontext/ready/training_tagged.jsonl -F recipe.py
 prodigy custom.rel.manual rel_trials222 en_core_sci_lg ../data/all_sentences/selected/nocontext/ready/training_tagged.jsonl --label C_VAL,D_VAL,RELATED,DOSAGE,C_MIN,C_MAX,D_MIN,D_MAX,COMPLEMENT --wrap --span-label UNITS,COVARIATES,COMPARATIVE,TYPE_MEAS,VALUE,PK,DISEASES,SPECIES,CHEMICAL --add-ents --disable-patterns rules_disable.jsonl --wrap -F rel_custom.py

@@ -74,9 +74,9 @@ def filter_pmc_articles(inp_path: str, inp_model: str, output_path: str):
 def run(path_model: str, path_ner_dict: str, path_pmid: str, path_pmc: str, out_dir: str):
     spacy_model = make_super_tagger(dictionaries_path=path_ner_dict, pk_ner_path=path_model)
 
-    # out_pmid_path = os.path.join(out_dir, 'all_selected_pmid.jsonl')
-    # print('Planning to write to: {}'.format(out_pmid_path))
-    # filter_pmid_articles(inp_path=path_pmid, inp_model=spacy_model, output_path=out_pmid_path)
+    out_pmid_path = os.path.join(out_dir, 'all_selected_pmid.jsonl')
+    print('Planning to write to: {}'.format(out_pmid_path))
+    filter_pmid_articles(inp_path=path_pmid, inp_model=spacy_model, output_path=out_pmid_path)
 
     out_pmc_path = os.path.join(out_dir, 'all_selected_pmc.jsonl')
     print('Planning to write to: {}'.format(out_pmc_path))
@@ -93,14 +93,14 @@ def main():
                         default='../data/dictionaries/terms.json'
                         )
     parser.add_argument("--path-pmid", type=str, help="Path to the directory with all the PK relevant files in xml",
-                        default='../data/all_sentences/pmids'
+                        default='../data/raw/pmids'
                         )
     parser.add_argument("--path-pmc", type=str, help="Path to the file with all the PMC sentences",
-                        default='../data/all_sentences/raw/all_sentences.jsonl'
+                        default='../data/raw/pmcs/raw.jsonl'
                         )
 
     parser.add_argument("--out-dir", type=str, help="Path to the output directory.",
-                        default='../data/all_sentences/selected/clean'
+                        default='../data/raw/selected/clean'
                         )
     args = parser.parse_args()
     run(path_model=args.path_model, path_ner_dict=args.path_ner_dict, path_pmid=args.path_pmid, path_pmc=args.path_pmc,

@@ -203,14 +203,14 @@ def main():
                         default='../data/models/pk_ner_supertok'
                         )
     parser.add_argument("--path-pmid", type=str, help="Path to the directory with all the PK relevant files in xml",
-                        default='../data/all_sentences/pmids'
+                        default='../data/raw/pmids'
                         )
     parser.add_argument("--path-pmc", type=str, help="Path to the file with all the PMC sentences",
-                        default='../data/all_semtemces/raw/all_sentences.jsonl'
+                        default='../data/all_semtemces/pmcs/raw.jsonl'
                         )
 
     parser.add_argument("--out-dir", type=str, help="Path to the output directory.",
-                        default='../data/all_sentences/selected'
+                        default='../data/raw/selected'
                         )
     parser.add_argument("--include-context", type=bool, help="Whether to include contextual sentences.",
                         default=True
@@ -225,17 +225,17 @@ if __name__ == '__main__':
     """
     path_model = os.path.join("data", "pk_ner_supertok")
 
-    path_pmid = os.path.join("/home/ferran/Dropbox/PKRelations/data/all_sentences/pmids")
-    path_pmc = os.path.join("/home/ferran/Dropbox/PKRelations/data/all_sentences/raw/all_sentences.jsonl")
+    path_pmid = os.path.join("/home/ferran/Dropbox/PKRelations/data/raw/pmids")
+    path_pmc = os.path.join("/home/ferran/Dropbox/PKRelations/data/raw/pmcs/raw.jsonl")
 
-    out_path_pmc_context = os.path.join("data", "all_sentences", "selected", "context", "pmc",
+    out_path_pmc_context = os.path.join("data", "raw", "selected", "context", "pmc",
                                         "all_selected_context.jsonl")
-    out_path_pmid_context = os.path.join("data", "all_sentences", "selected", "context", "pmid",
+    out_path_pmid_context = os.path.join("data", "raw", "selected", "context", "pmid",
                                          "all_selected_context.jsonl")
 
-    out_path_pmc_nocontext = os.path.join("data", "all_sentences", "selected", "nocontext", "pmc",
+    out_path_pmc_nocontext = os.path.join("data", "raw", "selected", "nocontext", "pmc",
                                           "all_selected_nocontext.jsonl")
-    out_path_pmid_nocontext = os.path.join("data", "all_sentences", "selected", "nocontext", "pmid",
+    out_path_pmid_nocontext = os.path.join("data", "raw", "selected", "nocontext", "pmid",
                                            "all_selected_nocontext.jsonl")
 
     nlp = spacy.load(path_model)

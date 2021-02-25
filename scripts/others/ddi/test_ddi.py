@@ -1,13 +1,4 @@
-import os
-from bs4 import BeautifulSoup
-from nltk.stem import PorterStemmer
-import spacy
-from spacy.tokens import Span
-from spacy import displacy
-from tqdm import tqdm
-from spacy.util import filter_spans
-
-from extract_lang import analyse_all
+from scripts.others.extract_lang import analyse_all
 
 text1 = "Itraconazole affected the pharmacokinetic parameters of S-fexofenadine more, and increased AUC(0," \
         "24 h) of S-fexofenadine and R-fexofenadine by 4.0-fold (95% CI of differences 2.8, 5.3; P < 0.001) and by " \

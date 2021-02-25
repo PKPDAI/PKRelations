@@ -5,7 +5,6 @@ from spacy.symbols import ORTH
 from spacy.util import compile_prefix_regex, compile_infix_regex, compile_suffix_regex
 from scispacy.consts import ABBREVIATIONS
 import re
-from spacy.tokens import Span
 
 
 def combined_rule_prefixes() -> List[str]:

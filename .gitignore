@@ -75,4 +75,5 @@ cython_debug/
 # idea
 /.idea
 /prodigy-*.whl
-/data/
+/data
+!/data/dictionaries
