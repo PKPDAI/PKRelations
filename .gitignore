@@ -75,5 +75,7 @@ cython_debug/
 # idea
 /.idea
 /prodigy-*.whl
+
 /data
 !/data/dictionaries
+!/data/tokenizers/rex-tokenizer
