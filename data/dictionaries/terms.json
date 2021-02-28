@@ -1,11 +1,17 @@
 {
-  "TYPE_MEAS":["mean", "median", "average", "std", "standard deviation",
-  "interquartile variance", "iqv", "i.q.v.", "confidence interval", "ci", "interquartile range", "ir", "95% ci",
-  "95%ci", "99% ci", "95%-ci", "99%ci", "geometric mean ratio" , "gmr", "geometric mean", "gr", "excess of"],
+  "TYPE_MEAS":[
+    "mean", "median", "average",
+    "std", "standard deviation", "+-",
+    "interquartile variance", "iqv", "i.q.v.",
+    "confidence interval", "ci", "95% ci", "95%ci", "99% ci", "95%-ci", "99%ci", "ci", "90% ci", "90%ci",
+    "interquartile range", "ir",
+    "geometric mean", "gr","geometric mean ratio" , "gmr",
+    "individual", "population"
+    ],
 
-  "COMPARE": ["+-", "\u00b1", ">", "<", "exceed", "exceeded", "max", "min", "maximum", "minimum",
+  "COMPARE": ["\u00b1", ">", "<", "exceed", "exceeded", "max", "min", "maximum", "minimum",
     "=", "equals", "higher", "lower", "up to", "~", "approximately", "over", "under", "≡", "≡", "≃", "above",
-  "below", "about"],
+  "below", "about", "excess of"],
 
   "ROUTE": ["haemodialysis", "parenteraly", "parenterally", "parenteral", "i.g", "intracisternaly",
                 "intracisternally", "intracisternal", "periosseous", "subretinaly", "subretinally", "subretinal",

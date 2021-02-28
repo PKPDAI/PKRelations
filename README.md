@@ -14,10 +14,10 @@ python scripts/select_relevant_sentences.py \
 ````
 
 
-2. Split from main pool:
+2. Sample sentences to annotate from main pool of sentences:
 
-````
-python scripts/split_sentences.py \
+````bash
+python scripts/sample_sentences.py \
    --path-jsonl-pmids data/gold/base_files/all_selected_pmid.jsonl \
    --path-jsonl-pmcs data/gold/base_files/all_selected_pmc.jsonl \
    --slice-sizes 1000,20 \
@@ -26,44 +26,54 @@ python scripts/split_sentences.py \
 ````
 
 
-3. Re-tag some file that was already tagged:
+Re-tagg some file that was already tagged or just attach article link:
 
-````
-python scripts/rematch_jsonl.py \
-   --path-inp-file data/gold/rex-minipilot.jsonl \
-   --path-out-file data/gold/rex-minipilot2.jsonl \
+````bash
+python scripts/retagg_jsonl.py \
+   --path-inp-file data/gold/base_files/all_selected_pmid.jsonl \
+   --path-out-file data/gold/base_files/all_selected_pmid.jsonl \
    --path-base-model data/models/pk_ner_supertok \
-   --path-ner-dict data/dictionaries/terms.json
+   --path-ner-dict data/dictionaries/terms.json \
+   --only-attach-link true
 ````
 
+Make tokenizer ready for prodigy usage: 
+
+````bash
+python scripts/make_destructive_tokenizer.py \
+   --out-path data/models/tokenizers/super-tokenizer
+````
+ 
 ## Annotations
 
 Annotation recipes are stored at the `recipes` folder. To launch the recipe run: 
 
-````
-PRODIGY_ALLOWED_SESSIONS=ferran,vicky,joe,frank PRODIGY_PORT=8001 prodigy custom.rel.manual rex-pilot-50 data/models/tokenizers/rex-tokenizer data/gold/rex-minipilot2.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE  --wrap -F recipes/rel_custom.py
+````bash
+PRODIGY_ALLOWED_SESSIONS=ferran,vicky,joe,frank PRODIGY_PORT=8001 prodigy custom.rel.manual rex-pilot-50 data/models/tokenizers/super-tokenizer data/gold/train0-200.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE  --wrap -F recipes/rel_custom.py
 ````
 
 #### Review annotated data
 
 Run this to retrieve a file from azure storage containing annotations:
 
-````
+````bash
 python scripts/split_annotations.py \
    --azure-file-name rex-pilot-ferran-output.jsonl \
-   --save-local False
+   --save-local true \
+   --out-dir data/annotations/pilot
 ````
 
 This will create different prodigy datasets on your local machine, one for each annotator.
 
 Launch review:
 
+````bash
+prodigy review rex-pilot-reviewed rex-pilot-ferran-frank-done,rex-pilot-ferran-ferran-done,rex-pilot-ferran-simon-done --view-id relations 
 ````
-prodigy review rex-pilot-reviewed rex-pilot-ferran-frank-done,rex-pilot-ferran-ferran-done,rex-pilot-ferran-simon-done --view-id blocks
-````
+
 Review existing annotations from a single file: 
 
-````
+````bash
 prodigy custom.rel.manual rex-simon-reviewed data/models/tokenizers/rex-tokenizer data/rex-pilot-ferran-simon-done.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE  --wrap -F recipes/rel_custom.py
 ````
 

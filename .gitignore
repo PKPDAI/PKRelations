@@ -79,3 +79,5 @@ cython_debug/
 /data
 !/data/dictionaries
 !/data/tokenizers/rex-tokenizer
+/labels_1.jsonl
+/labels_2.jsonl

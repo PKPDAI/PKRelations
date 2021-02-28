@@ -1,7 +1,8 @@
 import json
 import re
 import string
-from typing import List
+import random
+from typing import List, Dict
 import spacy
 from spacy.util import filter_spans
 from spacy.matcher import Matcher
@@ -10,6 +11,8 @@ from itertools import groupby
 import ujson
 from pathlib import Path
 from spacy.pipeline import EntityRuler
+
+random.seed(1)
 
 
 def contains_digit(sentence):
@@ -97,7 +100,6 @@ class TokenEntityMatcher(object):
         for ent_span in doc_ent_spans:
             if (ent_span[0] <= start_new_entity < ent_span[1]) or (ent_span[0] < end_new_entity <= ent_span[1]):
                 return True
-                break
         return False
 
 
@@ -108,7 +110,8 @@ def get_range_entity(doc):
         if (ent.label_ == "VALUE") and (ent.end + 2 <= len(doc)) and (i < len(doc.ents)):
             next_token = doc[ent.end]
             next_next_token = doc[ent.end + 1]
-            if next_token.text in ("-", "to", "\u2012", "\u2013", "\u2014", "\u2015", ) and next_next_token.ent_type_ == "VALUE":
+            if next_token.text in (
+                    "-", "to", "\u2012", "\u2013", "\u2014", "\u2015",) and next_next_token.ent_type_ == "VALUE":
                 new_ent = Span(doc, ent.start, doc.ents[i + 1].end, label="RANGE")
                 new_ents.append(new_ent)
             else:
@@ -216,3 +219,31 @@ def write_jsonl(file_path, lines):
     """
     data = [ujson.dumps(line, escape_forward_slashes=False) for line in lines]
     Path(file_path).open('w', encoding='utf-8').write('\n'.join(data))
+
+
+def get_link(inp_sentence: Dict) -> str:
+    """Gets an input sentence from PMID/PMC doc in the form of dictionary in which the PMC/PMID is in the metadata key
+    and returns the PubMed link to that document"""
+    if 'pmc' in inp_sentence['metadata'].keys():
+        paper_link = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{}/".format(inp_sentence['metadata']['pmc'])
+    else:
+        paper_link = "https://www.ncbi.nlm.nih.gov/pubmed/{}".format(inp_sentence['metadata']['pmid'])
+    return paper_link
+
+
+def check_and_resample(sampled_subset: List, main_pool: List, ids_already_sampled: List):
+    final_subset_cl = []
+    for tmp_sentence in sampled_subset:
+        if int(tmp_sentence['metadata']['SID']) in ids_already_sampled:
+            """case in which the sentence has already been sampled"""
+            unique = False
+            while not unique:
+                tmp_sentence = random.sample(main_pool, 1)[0]  # sample a new one
+                if int(tmp_sentence['metadata']['SID']) not in ids_already_sampled:
+                    unique = True
+
+        final_subset_cl.append(tmp_sentence)
+        ids_already_sampled.append(int(tmp_sentence['metadata']['SID']))
+
+    assert len(final_subset_cl) == len(sampled_subset)
+    return final_subset_cl, ids_already_sampled

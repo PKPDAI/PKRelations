@@ -6,7 +6,7 @@ from azure.storage.blob import BlobClient
 import os
 
 
-def run(azure_file_name: str, save_local: bool):
+def run(azure_file_name: str, save_local: bool, out_dir: str):
     blob = BlobClient(
         account_url="https://pkpdaiannotations.blob.core.windows.net",
         container_name="pkpdaiannotations",
@@ -38,7 +38,7 @@ def run(azure_file_name: str, save_local: bool):
         if db.get_dataset(annotator_dataset_name):
             db.drop_dataset(annotator_dataset_name)
         if write:
-            write_jsonl(os.path.join("data", "annotations", annotator_dataset_name + ".jsonl"), sub_annotations)
+            write_jsonl(os.path.join(out_dir, annotator_dataset_name + ".jsonl"), sub_annotations)
 
         db.add_dataset(annotator_dataset_name)
         dataset_names.append(annotator_dataset_name)
@@ -58,9 +58,13 @@ def main():
     parser.add_argument("--save-local", type=bool, help="Whether to save the jsonl file locally",
                         default=False
                         )
+    parser.add_argument("--out-dir", type=str, help="Dir to write files",
+                        default='../data/annotations/pilot'
+                        )
+
     args = parser.parse_args()
 
-    run(azure_file_name=args.azure_file_name, save_local=args.save_local)
+    run(azure_file_name=args.azure_file_name, save_local=args.save_local, out_dir=args.out_dir)
 
 
 if __name__ == '__main__':
