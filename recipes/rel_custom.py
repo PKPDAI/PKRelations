@@ -52,6 +52,8 @@ def custom_rel_manual(dataset: str,
         wrap=wrap,
         hide_arrow_heads=hide_arrow_heads, )
 
+    components["config"]["feed_overlap"] = True
+    components["config"]["force_stream_order"] = True
     # Add callback to the components returned by the recipe
     components["validate_answer"] = validate_answer
     components["config"]["global_css"] = ".prodigy-button-reject, .prodigy-button-ignore {display: none}"

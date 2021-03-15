@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 import string
@@ -11,6 +12,7 @@ from itertools import groupby
 import ujson
 from pathlib import Path
 from spacy.pipeline import EntityRuler
+from azure.storage.blob import BlobClient
 
 random.seed(1)
 
@@ -122,6 +124,58 @@ def get_range_entity(doc):
     return doc
 
 
+def clean_values(doc):
+    """This function gets an input spacy doc and checks for VALUE entities. IF it finds one, it checks whether it's a
+    p-value and cleans any VALUE mentions entirely composed by characters, e.g. three, two one etc."""
+    new_ents = []
+    for i, ent in enumerate(doc.ents):
+        if is_pval(inp_ent=ent, inp_doc=doc):  # check whether it's p-value
+            new_ent = Span(doc, ent.start, ent.end, label="P-VALUE")
+            new_ents.append(new_ent)
+        else:
+            if ent.label_ == "VALUE":
+                if not is_exclusive_value(ent, doc):  # check whether it's an exclusive value
+                    new_ents.append(ent)
+            else:
+                new_ents.append(ent)
+    doc.ents = filter_spans(new_ents)
+    return doc
+
+
+def is_exclusive_value(inp_ent, inp_doc):
+    """The values that are considered exclusive are those with:
+     no digits, Table/Figure/Group/Compound + value, value-fold, value + times/patients or [value] """
+    doc_len = len(inp_doc)
+    if has_digits(inp_ent.text):
+        if all_digits(inp_ent.text):
+            prev_tok_idx = inp_ent.start - 1
+            subs_tok_idx = inp_ent.end
+            subs2_tok_idx = inp_ent.end + 1
+            if prev_tok_idx >= 0 and subs_tok_idx < doc_len:
+                if (inp_doc[prev_tok_idx].text == "[") and (inp_doc[subs_tok_idx].text == "]"):
+                    # integer value surrounded by parenthesis
+                    return True
+            if prev_tok_idx >= 0:
+                if inp_doc[prev_tok_idx].text.lower() in ["group", "groups", "table", "tables", "compound", "compounds",
+                                                          "figure", "figures", "study", "phase", "formulation",
+                                                          "product"]:
+                    return True
+            if subs_tok_idx < doc_len:
+                if inp_doc[subs_tok_idx].text.lower() in ["time", "times", "patient", "patients", "phases", "degrees"]:
+                    return True
+            if subs2_tok_idx < doc_len:
+                if inp_doc[subs_tok_idx].text.lower() in ["-", "\u223c"] and inp_doc[subs2_tok_idx].text.lower() in [
+                    "time",
+                    "times",
+                    "fold",
+                    "folds"]:
+                    return True
+
+    else:
+        return True
+    return False
+
+
 def make_super_tagger(dictionaries_path: str, pk_ner_path: str):
     """Gets nlp model that does PK NER and adds rules for detecting VALUES, TYPE_MEASUREMENTS, ROUTES and RANGES"""
 
@@ -158,45 +212,57 @@ def make_super_tagger(dictionaries_path: str, pk_ner_path: str):
         "pattern": [{'ORTH': "intra"}, {'ORTH': "-"}, {}]
     }]
 
-    all_patterns = value_patterns + type_meas_patterns + route_patterns + comparative_patterns  # + range_patterns
+    units_patterns = [{"label": "UNITS", "pattern": term} for term in patterns_dict["UNITS"]]
+
+    all_patterns = value_patterns + type_meas_patterns + route_patterns + comparative_patterns + units_patterns
+    # + range_patterns
 
     ruler = EntityRuler(nlp, phrase_matcher_attr="LOWER")
     ruler.add_patterns(all_patterns)
     nlp.add_pipe(ruler)
     nlp.add_pipe(get_range_entity, last=True)
+    nlp.add_pipe(clean_values, last=True)
     return nlp
 
 
 def arrange_pk_sentences_abstract_context(all_sentences: List):
     articles_sorted = sorted(all_sentences, key=lambda delement: delement['metadata']['pmid'])
     all_out_ready = []
+    # 1) group sentences by pmid
     for key, values in groupby(articles_sorted, key=lambda delement: delement['metadata']['pmid']):
-        abstract_sentences = list(sorted(list(values), key=lambda delement: delement['metadata']['SID']))
-        for i, sentence in enumerate(abstract_sentences):
-            if sentence['metadata']['relevant']:
-                out_sent = sentence.copy()
-                out_sent['previous_sentences'] = abstract_sentences[0:i]
-                out_sent['posterior_sentences'] = abstract_sentences[i + 1:]
-                all_out_ready.append(out_sent)
-
+        all_out_ready = get_out_sentence(chunk_sentences=values, sentences_ready=all_out_ready)
     return all_out_ready
 
 
 def arrange_pk_sentences_pmc_context(all_sentences: List):
     articles_sorted = sorted(all_sentences, key=lambda delement: delement['metadata']['pmid'])
     all_out_ready = []
+    # 1) group by pmid
     for key, values in groupby(articles_sorted, key=lambda delement: delement['metadata']['pmid']):
         article_sentences = list(sorted(list(values), key=lambda delement: delement['metadata']['paragraph_id']))
+        # 2) sub-group by paragraph id
         for subkey, sub_values in groupby(article_sentences, key=lambda delement: delement['metadata']['paragraph_id']):
-            paragraph_sentences = list(sorted(list(sub_values), key=lambda delement: delement['metadata']['SID']))
-            for i, sentence in enumerate(paragraph_sentences):
-                if sentence['metadata']['relevant']:
-                    out_sent = sentence.copy()
-                    out_sent['previous_sentences'] = paragraph_sentences[0:i]
-                    out_sent['posterior_sentences'] = paragraph_sentences[i + 1:]
-                    all_out_ready.append(out_sent)
+            all_out_ready = get_out_sentence(chunk_sentences=sub_values, sentences_ready=all_out_ready)
 
     return all_out_ready
+
+
+def get_out_sentence(chunk_sentences, sentences_ready):
+    """
+    Given a bunch of sentences coming from the same abstract/paragraph, it sorts them based on SID and,
+     if the sentence is relevant, it complements that sentence with the ones before and after in the 'previous_sentences
+     ' and 'posterior_sentences' and appends that dictionary to sentences_ready
+    chunk sentences param: list/iterable of sentences from the same paragraph/abstract
+    sentences_ready param: list of sentences selected as 'relevant' (having PK + VALUE/RANGE)
+    """
+    chunk_sentences_sorted = list(sorted(list(chunk_sentences), key=lambda delement: delement['metadata']['SID']))
+    for i, sentence in enumerate(chunk_sentences_sorted):
+        if sentence['metadata']['relevant']:
+            out_sent = sentence.copy()
+            out_sent['previous_sentences'] = chunk_sentences_sorted[0:i]
+            out_sent['posterior_sentences'] = chunk_sentences_sorted[i + 1:]
+            sentences_ready.append(out_sent)
+    return sentences_ready
 
 
 def read_jsonl(file_path):
@@ -247,3 +313,109 @@ def check_and_resample(sampled_subset: List, main_pool: List, ids_already_sample
 
     assert len(final_subset_cl) == len(sampled_subset)
     return final_subset_cl, ids_already_sampled
+
+
+def populate_spans(spacy_doc, sentence) -> Dict:
+    spans = []
+    ent_labels = []
+    for entity in spacy_doc.ents:
+        spans.append(dict(start=entity.start_char, end=entity.end_char, label=entity.label_, ))
+        ent_labels.append(entity.label_)
+    sentence['spans'] = spans
+    sentence['sentence_hash'] = hashlib.sha1(sentence['text'].encode()).hexdigest()
+    sentence['metadata']['relevant'] = False
+    if len(sentence['text']) > 5 and ('PK' in ent_labels) and (('VALUE' in ent_labels) or ('RANGE' in ent_labels)):
+        sentence['metadata']['relevant'] = True
+
+    return sentence
+
+
+def sentence_pmid_to_int(sentence_dict: Dict):
+    sentence_dict['metadata']['pmid'] = int(sentence_dict['metadata']['pmid'])
+    return sentence_dict
+
+
+def is_pval(inp_ent, inp_doc):
+    """
+    Gets as an input an entity and the doc where the entity comes from and checks whether that entity is a p-value
+    """
+    if inp_ent.label_ == "VALUE":  # check that it's a value
+        number_as_text = inp_ent.text.replace(',', '.')
+        if isfloat(number_as_text):
+            if float(number_as_text) < 1:  # check that it's lower than 1
+                if (inp_ent.start > 1) and (inp_doc[inp_ent.start - 1].text.lower() in [">", "<", "=", "was"]) and (
+                        inp_doc[inp_ent.start - 2].text.lower() in ["p", "pval", "pvalue"]):
+                    return True
+                else:
+                    if (inp_ent.start > 3) and (inp_doc[inp_ent.start - 1].text.lower() in [">", "<", "=", "was"]) and (
+                            inp_doc[inp_ent.start - 2].text.lower() in ["value", "val"]) and (
+                            inp_doc[inp_ent.start - 3].text in ["-"]) and (inp_doc[inp_ent.start - 4].text.lower() in
+                                                                           ["p"]):
+                        return True
+        else:
+            if (inp_ent.start > 1) and (inp_doc[inp_ent.start - 1].text.lower() in [">", "<", "=", "was"]) and (
+                    inp_doc[inp_ent.start - 2].text.lower() in ["p", "pval", "pvalue"]):
+                return True
+            else:
+                if (inp_ent.start > 3) and (inp_doc[inp_ent.start - 1].text in [">", "<", "=", "was"]) and (
+                        inp_doc[inp_ent.start - 2].text.lower() in ["value", "val"]) and (
+                        inp_doc[inp_ent.start - 3].text in ["-"]) and (inp_doc[inp_ent.start - 4].text.lower() in
+                                                                       ["p"]):
+                    return True
+    return False
+
+
+def isfloat(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
+def has_digits(input_string):
+    return any(char.isdigit() for char in input_string)
+
+
+def all_digits(input_string):
+    return all(char.isdigit() for char in input_string)
+
+
+def is_sentence_relevant(inp_sentence: Dict) -> bool:
+    uq_spans = set([span['label'] for span in inp_sentence['spans']])
+    if ('PK' in uq_spans) and (('VALUE' in uq_spans) or ('RANGE' in uq_spans)):
+        return True
+    else:
+        return False
+
+
+def get_sort_key(tmp_span):
+    return tmp_span['end'] - tmp_span['start'], -tmp_span['start']
+
+
+def resolve_overlapping_spans(inp_spans: List[Dict]) -> List[Dict]:
+    """Taken from spacy.util.filter_spans"""
+    sorted_spans = sorted(inp_spans, key=get_sort_key, reverse=True)  # sorts spans by length
+    result = []
+    seen_tokens = set()
+    for span in sorted_spans:
+        if span["start"] not in seen_tokens and span["end"] - 1 not in seen_tokens:
+            result.append(span)
+        seen_tokens.update(range(span["start"], span["end"]))  # covers the range of characters occupied by that entity
+    result = sorted(result, key=lambda tmp_span: tmp_span["start"])
+    return result
+
+
+def get_blob(inp_blob_name: str):
+    blob = BlobClient(
+        account_url="https://pkpdaiannotations.blob.core.windows.net",
+        container_name="pkpdaiannotations",
+        blob_name=inp_blob_name,
+        credential="UpC2SPFbEqJdY0tgY91y1oVe3ZcQwxALkJ2QIDTYN17FoTLmpltCFyzxKk13fjrp04y+7K4L6t5KR6VOMUKOqw==")
+    return blob
+
+
+def add_annotator_meta(inp_dict, base_dataset_name):
+    """Adds the annotator session id into the prodigy annotated instance dictionary"""
+    inp_dict['meta']['source'] = inp_dict['_session_id'].replace(base_dataset_name, "")
+    return inp_dict

@@ -1,7 +1,7 @@
 """This script makes all the data needed to subset potential sentences for relation extraction"""
 import argparse
 from typing import List
-from pkrex.utils import read_jsonl, write_jsonl, check_and_resample
+from pkrex.utils import read_jsonl, write_jsonl, check_and_resample, sentence_pmid_to_int
 import os
 import random
 from tqdm import tqdm
@@ -12,43 +12,43 @@ random.seed(1)
 def run(path_jsonl_pmids: str, path_jsonl_pmcs: str, slice_sizes: List, slice_names: List, output_dir: str,
         path_already_sampled: str):
     assert len(slice_sizes) == len(slice_names)
+
     # ===== 1. Read sentences from main pools in ===============
-    pmc_sentences = list(read_jsonl(path_jsonl_pmcs))
+    pmc_sentences = [sentence_pmid_to_int(sentence) for sentence in read_jsonl(path_jsonl_pmcs)]
     full_text_pmids = set([x['metadata']['pmid'] for x in pmc_sentences])
     pmid_sentences = [x for x in list(read_jsonl(path_jsonl_pmids)) if x['metadata']['pmid'] not in full_text_pmids]
 
-    # if x['metadata']['sections'][0] not in ['Abstract', 'abstract', 'ABSTRACT']]
-    # ===== 2. Read list of sentence IDs already sampled ===============
+    # ===== 2. Read list of sentence IDs already sampled and relevant pmids ===============
     with open(path_already_sampled) as f:
         sids_already_sampled = [int(sid) for sid in list(f)]
 
-    # ===== 3. Randomly shuffle sentences ===============
+    # ===== 4. Randomly shuffle sentences ===============
     random.shuffle(pmc_sentences)
     random.shuffle(pmid_sentences)
 
     previous_size = 0
     for size, name in tqdm(zip(slice_sizes, slice_names)):
         half_size = round(size / 2)
-        # ===== 4. Take and check PMID sentences ===============
+        # ===== 5. Take and check PMID sentences ===============
         pmid_subset = pmid_sentences[previous_size:previous_size + half_size]
 
         pmid_subset, sids_already_sampled = check_and_resample(sampled_subset=pmid_subset, main_pool=pmid_sentences,
                                                                ids_already_sampled=sids_already_sampled)
 
-        # ===== 5. Take and check PMC sentences ===============
+        # ===== 6. Take and check PMC sentences ===============
         pmc_subset = pmc_sentences[previous_size:previous_size + half_size]
 
         pmc_subset, sids_already_sampled = check_and_resample(sampled_subset=pmc_subset, main_pool=pmc_sentences,
                                                               ids_already_sampled=sids_already_sampled)
 
-        # ===== 6. Join PMID and PMC sampled subsets ===============
+        # ===== 7. Join PMID and PMC sampled subsets ===============
         final_subset = pmid_subset + pmc_subset
 
-        # ===== 7. Rewrite sids_already_sampled ===============
+        # ===== 8. Rewrite sids_already_sampled ===============
         with open(path_already_sampled, 'w') as file:
             file.write('\n'.join([str(sid) for sid in sids_already_sampled]))
 
-        # ===== 8. Write new jsonl file ===============
+        # ===== 9. Write new jsonl file ===============
         random.shuffle(final_subset)  # shuffle them again before writing
         out_file = os.path.join(output_dir, name + '.jsonl')
         write_jsonl(out_file, final_subset)
@@ -67,10 +67,10 @@ def main():
                         )
 
     parser.add_argument("--slice-sizes", nargs='+', help="Number of examples in each output file",
-                        default=[200, 200]
+                        default=[200, 200], type=int
                         )
     parser.add_argument("--slice-names", nargs='+', help="Names of the output files",
-                        default=['test0-200', 'train0-200']
+                        default=['test0-200', 'train0-200'], type=str
                         )
 
     parser.add_argument("--out-dir", type=str, help="Path to the output directory",

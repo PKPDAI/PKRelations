@@ -1,5 +1,5 @@
 import spacy
-from prodigy.util import read_jsonl, write_jsonl
+from prodigy.util import read_jsonl
 import os
 from tqdm import tqdm
 import requests
@@ -64,11 +64,11 @@ if __name__ == '__main__':
     #   out_sentences1 = tag_them(sentences=train_sentences, entities=["CHEMICAL", "DISEASE", "SPECIES"], nlp=nlp_drugs,
     #                             use_bern=True)
     out_sentences1 = tag_additional(train_sentences, nlp_extra)
-  #  write_jsonl(out_path1, out_sentences1)
+    #  write_jsonl(out_path1, out_sentences1)
 
     #   test_sentences = list(read_jsonl(os.path.join(base_dir, file_test)))
     test_sentences = list(read_jsonl(out_path2))
     # out_sentences2 = tag_them(sentences=test_sentences, entities=["CHEMICAL", "DISEASE", "SPECIES"], nlp=nlp_drugs,
     #                          use_bern=True)
     out_sentences2 = tag_additional(test_sentences, nlp_extra)
-   # write_jsonl(out_path2, out_sentences2)
+# write_jsonl(out_path2, out_sentences2)

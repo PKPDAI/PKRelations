@@ -2,16 +2,12 @@
 import argparse
 from prodigy.components.db import connect
 from prodigy.util import read_jsonl, write_jsonl
-from azure.storage.blob import BlobClient
 import os
+from pkrex.utils import get_blob
 
 
 def run(azure_file_name: str, save_local: bool, out_dir: str):
-    blob = BlobClient(
-        account_url="https://pkpdaiannotations.blob.core.windows.net",
-        container_name="pkpdaiannotations",
-        blob_name=azure_file_name,
-        credential="UpC2SPFbEqJdY0tgY91y1oVe3ZcQwxALkJ2QIDTYN17FoTLmpltCFyzxKk13fjrp04y+7K4L6t5KR6VOMUKOqw==")
+    blob = get_blob(inp_blob_name=azure_file_name)
 
     filename = "temp_annotations.jsonl"
     with open(filename, "wb") as f:
@@ -52,7 +48,7 @@ def run(azure_file_name: str, save_local: bool, out_dir: str):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--azure-file-name", type=str, help="Annotate file that we want to split",
+    parser.add_argument("--azure-file-name", type=str, help="Annotated file that we want to split",
                         default='rex-pilot-ferran-output.jsonl'
                         )
     parser.add_argument("--save-local", type=bool, help="Whether to save the jsonl file locally",

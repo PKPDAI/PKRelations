@@ -1,4 +1,3 @@
-from typing import List
 from spacy.lang import char_classes
 from spacy.symbols import ORTH
 from spacy.util import compile_infix_regex, compile_suffix_regex

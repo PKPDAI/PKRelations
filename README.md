@@ -1,8 +1,8 @@
 # PKRelations
-[**Pre-processing**](#pre-proessing)| [**Annotations**](#annotations) | [**Model development**](#model-development)
-## Pre-proessing
+[**Pre-processing**](#pre-processing)| [**Annotations**](#annotations) | [**Model development**](#model-development)
+## Pre-processing
 
-1. Tag sentences across all articles/abstracts and select sentences with at least 1 PK and 1 VALUE entity (~1.1h with 12 cores):
+1. Tag sentences across all articles/abstracts and select sentences with at least 1 PK and 1 VALUE/RANGE entity (~1.1h with 12 cores):
 
 ````bash
 python scripts/select_relevant_sentences.py \
@@ -10,7 +10,9 @@ python scripts/select_relevant_sentences.py \
    --path-ner-dict data/dictionaries/terms.json \
    --path-pmid data/raw/pmids \
    --path-pmc data/raw/pmcs/all_sentences.jsonl \
-   --out-dir data/gold/base_files/
+   --path-relevant-pmids data/raw/allPapersPMIDS.txt \
+   --out-dir data/gold/base_files/ 
+   
 ````
 
 
@@ -20,21 +22,42 @@ python scripts/select_relevant_sentences.py \
 python scripts/sample_sentences.py \
    --path-jsonl-pmids data/gold/base_files/all_selected_pmid.jsonl \
    --path-jsonl-pmcs data/gold/base_files/all_selected_pmc.jsonl \
-   --slice-sizes 1000,20 \
-   --slice-names rex-pilot,rex-minipilot \
-   --out-dir data/gold/
+   --slice-sizes 205 \
+   --slice-names dev0-200\
+   --out-dir data/gold/ \
+   --path-already-sampled data/gold/already_sampled.txt
 ````
 
-
 Re-tagg some file that was already tagged or just attach article link:
+
+````bash
+python scripts/retagg_jsonl.py \
+   --path-inp-file data/gold/base_files/all_selected_pmc.jsonl \
+   --path-out-file data/gold/base_files/all_selected_pmc.jsonl \
+   --path-base-model data/models/pk_ner_supertok \
+   --path-ner-dict data/dictionaries/terms.json 
+````
 
 ````bash
 python scripts/retagg_jsonl.py \
    --path-inp-file data/gold/base_files/all_selected_pmid.jsonl \
    --path-out-file data/gold/base_files/all_selected_pmid.jsonl \
    --path-base-model data/models/pk_ner_supertok \
-   --path-ner-dict data/dictionaries/terms.json \
-   --only-attach-link true
+   --path-ner-dict data/dictionaries/terms.json 
+````
+
+Add bern entities
+
+````bash
+python scripts/add_bern.py \
+   --path-inp-file data/gold/dev0-200.jsonl \
+   --resolve-overlapping true
+````
+
+````bash
+python scripts/add_bern.py \
+   --path-inp-file data/gold/test0-200.jsonl \
+   --resolve-overlapping true
 ````
 
 Make tokenizer ready for prodigy usage: 
@@ -44,6 +67,8 @@ python scripts/make_destructive_tokenizer.py \
    --out-path data/models/tokenizers/super-tokenizer
 ````
  
+
+
 ## Annotations
 
 Annotation recipes are stored at the `recipes` folder. To launch the recipe run: 
