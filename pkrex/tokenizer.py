@@ -22,7 +22,6 @@ def replace_tokenizer(spacy_model: Language) -> Language:
                                    ' ': [{65: ' ', 74: 103, 75: '_SP'}],
                                    '")': [{65: '")'}], "'": [{65: "'"}],
                                    "''": [{65: "''"}]}
-    # spacy_model = add_special_cases(nlp_model=spacy_model)
 
     return spacy_model
 

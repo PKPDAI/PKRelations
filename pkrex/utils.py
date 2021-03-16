@@ -17,6 +17,55 @@ from azure.storage.blob import BlobClient
 random.seed(1)
 
 
+def make_super_tagger(dictionaries_path: str, pk_ner_path: str):
+    """Gets nlp model that does PK NER and adds rules for detecting VALUES, TYPE_MEASUREMENTS, ROUTES and RANGES"""
+
+    with open(dictionaries_path) as f:
+        patterns_dict = json.load(f)
+
+    nlp = spacy.load(pk_ner_path)
+
+    # patterns
+
+    value_patterns = [{"label": "VALUE",
+                       "pattern": [{'LIKE_NUM': True}, {'ORTH': {'IN': ["^-", "^", "(-", "^\u2212"]}},
+                                   {'LIKE_NUM': True}]
+                       },
+
+                      {"label": "VALUE",
+                       "pattern": [{'LIKE_NUM': True}, {'ORTH': "e"}, {'ORTH': '-'},
+                                   {'LIKE_NUM': True}]
+                       },
+
+                      {"label": "VALUE",
+                       "pattern": [{'LIKE_NUM': True}]
+                       }
+                      ]
+
+    type_meas_patterns = [{"label": "TYPE_MEAS", "pattern": term} for term in patterns_dict["TYPE_MEAS"]]
+
+    comparative_patterns = [{"label": "COMPARE",
+                             "pattern": term} for term in patterns_dict["COMPARE"]]
+
+    route_patterns = [{"label": "ROUTE", "pattern": term} for term in patterns_dict["ROUTE"]]
+    route_patterns = route_patterns + [{
+        "label": "ROUTE",
+        "pattern": [{'ORTH': "intra"}, {'ORTH': "-"}, {}]
+    }]
+
+    units_patterns = [{"label": "UNITS", "pattern": term} for term in patterns_dict["UNITS"]]
+
+    all_patterns = value_patterns + type_meas_patterns + route_patterns + comparative_patterns + units_patterns
+    # + range_patterns
+
+    ruler = EntityRuler(nlp, phrase_matcher_attr="LOWER")
+    ruler.add_patterns(all_patterns)
+    nlp.add_pipe(ruler)
+    nlp.add_pipe(get_range_entity, last=True)
+    nlp.add_pipe(clean_values, last=True)
+    return nlp
+
+
 def contains_digit(sentence):
     return any(map(str.isdigit, sentence))
 
@@ -126,7 +175,8 @@ def get_range_entity(doc):
 
 def clean_values(doc):
     """This function gets an input spacy doc and checks for VALUE entities. IF it finds one, it checks whether it's a
-    p-value and cleans any VALUE mentions entirely composed by characters, e.g. three, two one etc."""
+    p-value and cleans any VALUE mentions entirely composed by characters, e.g. three, two one etc. Finally it cleans
+     comparatives preceding a p-val e.g. for p-val < 0.01, < would not be a comparative """
     new_ents = []
     for i, ent in enumerate(doc.ents):
         if is_pval(inp_ent=ent, inp_doc=doc):  # check whether it's p-value
@@ -138,7 +188,17 @@ def clean_values(doc):
                     new_ents.append(ent)
             else:
                 new_ents.append(ent)
-    doc.ents = filter_spans(new_ents)
+    # Clean comparatives that appear before P-VALUE entities
+    new_ents_2 = []
+    number_of_entities = len(new_ents)
+    for i, ent in enumerate(new_ents):
+        if ent.label_ == "COMPARE" and ((i+1) < number_of_entities) and new_ents[i+1].label_ == "P-VALUE":
+            if ent.end != new_ents[i+1].start:
+                new_ents_2.append(ent)
+        else:
+            new_ents_2.append(ent)
+
+    doc.ents = filter_spans(new_ents_2)
     return doc
 
 
@@ -158,71 +218,19 @@ def is_exclusive_value(inp_ent, inp_doc):
             if prev_tok_idx >= 0:
                 if inp_doc[prev_tok_idx].text.lower() in ["group", "groups", "table", "tables", "compound", "compounds",
                                                           "figure", "figures", "study", "phase", "formulation",
-                                                          "product"]:
+                                                          "product", "fig", "tab", "day", "days", "equation", "eq"]:
                     return True
             if subs_tok_idx < doc_len:
                 if inp_doc[subs_tok_idx].text.lower() in ["time", "times", "patient", "patients", "phases", "degrees"]:
                     return True
             if subs2_tok_idx < doc_len:
-                if inp_doc[subs_tok_idx].text.lower() in ["-", "\u223c"] and inp_doc[subs2_tok_idx].text.lower() in [
-                    "time",
-                    "times",
-                    "fold",
-                    "folds"]:
+                if inp_doc[subs_tok_idx].text.lower() in ["-", "\u223c"] and inp_doc[subs2_tok_idx].text.lower() in \
+                        ["time", "times", "fold", "folds"]:
                     return True
 
     else:
         return True
     return False
-
-
-def make_super_tagger(dictionaries_path: str, pk_ner_path: str):
-    """Gets nlp model that does PK NER and adds rules for detecting VALUES, TYPE_MEASUREMENTS, ROUTES and RANGES"""
-
-    with open(dictionaries_path) as f:
-        patterns_dict = json.load(f)
-
-    nlp = spacy.load(pk_ner_path)
-
-    # patterns
-
-    value_patterns = [{"label": "VALUE",
-                       "pattern": [{'LIKE_NUM': True}, {'ORTH': {'IN': ["^-", "^", "(-", "^\u2212"]}},
-                                   {'LIKE_NUM': True}]
-                       },
-
-                      {"label": "VALUE",
-                       "pattern": [{'LIKE_NUM': True}, {'ORTH': "e"}, {'ORTH': '-'},
-                                   {'LIKE_NUM': True}]
-                       },
-
-                      {"label": "VALUE",
-                       "pattern": [{'LIKE_NUM': True}]
-                       }
-                      ]
-
-    type_meas_patterns = [{"label": "TYPE_MEAS", "pattern": term} for term in patterns_dict["TYPE_MEAS"]]
-
-    comparative_patterns = [{"label": "COMPARE",
-                             "pattern": term} for term in patterns_dict["COMPARE"]]
-
-    route_patterns = [{"label": "ROUTE", "pattern": term} for term in patterns_dict["ROUTE"]]
-    route_patterns = route_patterns + [{
-        "label": "ROUTE",
-        "pattern": [{'ORTH': "intra"}, {'ORTH': "-"}, {}]
-    }]
-
-    units_patterns = [{"label": "UNITS", "pattern": term} for term in patterns_dict["UNITS"]]
-
-    all_patterns = value_patterns + type_meas_patterns + route_patterns + comparative_patterns + units_patterns
-    # + range_patterns
-
-    ruler = EntityRuler(nlp, phrase_matcher_attr="LOWER")
-    ruler.add_patterns(all_patterns)
-    nlp.add_pipe(ruler)
-    nlp.add_pipe(get_range_entity, last=True)
-    nlp.add_pipe(clean_values, last=True)
-    return nlp
 
 
 def arrange_pk_sentences_abstract_context(all_sentences: List):
