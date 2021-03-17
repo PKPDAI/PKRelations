@@ -19,7 +19,15 @@
    "higher", "lower", "up to", "~", "approximately", "over", "under", "≡", "≡", "≃", "above",
   "below", "about", "excess of", "close to", "~", "\u007b", "less", "more"],
 
-  "UNITS": ["%", "h", "hrs", "days" ,"minutes", "hours", "min", "hr", "hrs"],
+  "UNITS": ["mg.min.l-1", "ng·h/ml", "minute", "mg x l(-1)", "ng/ml", "hr", "hours", "liter/kg", "l·h(-1)·kg(-1)", "μm", "%", 
+    "μg/ml", "ml/kg", "degrees c", "degree c", "ml.min-1", "ml.min-1.kg-1", "l/h/kg", "l/kg", "ug/ml", "per kg",
+    "h × ng/ml", "microm", "ml/min/1.73m2", "μl/min/mg", "years", "ml/h/kg", "micrograms ml-1", "l h−1 kg−1", "l/h",
+    "ng · h/ml", "ml/kg/h", "nm", "µg/ml", "pmol min(-1) mg(-1)", "day", "mg/ml", "mg·h/ml", "μg/ml ⋅ hour", "mg--an",
+    "micrograms/ml", "micrograms.hr/ml", "mg*h/l", "microg/ml", "l h-1", "liters/h", "pmol/l", "ml/min/kg", 
+    "mg", "min", "min-1", "h", "id/l", "pg ml-1", "l", "months", "day-1", "weeks", "microg h/ml", "mg kg−1",
+    "l m−2", "l h(-1))", "nmol/l", "mg l-1", "ng× h/ml", "l.kg-1", "ml/min", "mg/kg/week", "mg•hour/l",
+    "mg x h(-1)", "mg/kg", "days", "ml", "ng ml-1", "u/kg", "mg/l", "(ml/h)/kg", "microg x h/ml", 
+    "micrograms/h/ml", "μmol/l"],
 
   "ROUTE": ["periodontally", "intracameraly", "intradermally", "pv", "oraly", "intracavernous", "intrabursaly", "qtt",
     "intracholangiopancreatic", "subretinal", "intraprostatical", "aortical", "vaginally", "intraportal",
