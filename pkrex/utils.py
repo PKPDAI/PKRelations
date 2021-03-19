@@ -218,10 +218,12 @@ def is_exclusive_value(inp_ent, inp_doc):
             if prev_tok_idx >= 0:
                 if inp_doc[prev_tok_idx].text.lower() in ["group", "groups", "table", "tables", "compound", "compounds",
                                                           "figure", "figures", "study", "phase", "formulation",
-                                                          "product", "fig", "tab", "day", "days", "equation", "eq"]:
+                                                          "product", "fig", "tab", "day", "days", "equation", "eq",
+                                                          "trial", "trials", "subject"]:
                     return True
             if subs_tok_idx < doc_len:
-                if inp_doc[subs_tok_idx].text.lower() in ["time", "times", "patient", "patients", "phases", "degrees"]:
+                if inp_doc[subs_tok_idx].text.lower() in ["time", "times", "patient", "patients", "phases", "degrees",
+                                                          "sample", "samples", "subject", "subjects"]:
                     return True
             if subs2_tok_idx < doc_len:
                 if inp_doc[subs_tok_idx].text.lower() in ["-", "\u223c"] and inp_doc[subs2_tok_idx].text.lower() in \

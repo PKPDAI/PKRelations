@@ -12,22 +12,35 @@
     "interquartile range", "ir", "cv","c.v.","coefficient of variation", "interindividual variability",
     "geometric mean","gmean", "gr","geometric mean ratio" , "gmr", "gm", "geometric means", "geometric means ratio",
     "mean ratio", "mean ratios", "geometric least square mean ratio", "geometric least square mean ratios",
-    "individual", "population"
+    "individual", "population", "bsv", "between subject variability (bsv)", "between-subject variability (bsv)",
+    "between subject variability", "between-subject variability"
     ],
 
   "COMPARE": [">", "<", "exceed", "exceeded", "max", "maximum", "minimum",
    "higher", "lower", "up to", "~", "approximately", "over", "under", "≡", "≡", "≃", "above",
   "below", "about", "excess of", "close to", "~", "\u007b", "less", "more"],
 
-  "UNITS": ["mg.min.l-1", "ng·h/ml", "minute", "mg x l(-1)", "ng/ml", "hr", "hours", "liter/kg", "l·h(-1)·kg(-1)", "μm", "%", 
-    "μg/ml", "ml/kg", "degrees c", "degree c", "ml.min-1", "ml.min-1.kg-1", "l/h/kg", "l/kg", "ug/ml", "per kg",
-    "h × ng/ml", "microm", "ml/min/1.73m2", "μl/min/mg", "years", "ml/h/kg", "micrograms ml-1", "l h−1 kg−1", "l/h",
-    "ng · h/ml", "ml/kg/h", "nm", "µg/ml", "pmol min(-1) mg(-1)", "day", "mg/ml", "mg·h/ml", "μg/ml ⋅ hour", "mg--an",
-    "micrograms/ml", "micrograms.hr/ml", "mg*h/l", "microg/ml", "l h-1", "liters/h", "pmol/l", "ml/min/kg", 
-    "mg", "min", "min-1", "h", "id/l", "pg ml-1", "l", "months", "day-1", "weeks", "microg h/ml", "mg kg−1",
-    "l m−2", "l h(-1))", "nmol/l", "mg l-1", "ng× h/ml", "l.kg-1", "ml/min", "mg/kg/week", "mg•hour/l",
-    "mg x h(-1)", "mg/kg", "days", "ml", "ng ml-1", "u/kg", "mg/l", "(ml/h)/kg", "microg x h/ml", 
-    "micrograms/h/ml", "μmol/l"],
+  "UNITS": ["%", "(ml/h)/kg", "/h", "90% confidence intervals", "day", "day-1", "days", "degree c", "degrees c",
+    "dogs", "fold",  "generic formulations", "h × ng/ml", "h*ng/ml", "hour", "hours", "hr", "h·mg/l",
+    "h− 1", "id/l", "iu/l", "iu/ml", "kg", "l h(-1))", "l h-1", "l h−1 kg−1", "l m−2", "l.kg-1", "l/h", "l/h/kg",
+    "l/h/m(2)", "l/kg", "l/m(2)", "l/min", "liter/kg", "liters", "liters/h", "liters/hour", "liters/kg",
+    "l·h(-1)·kg(-1)", "mg", "mg h/ml", "mg kg(-1)", "mg kg−1", "mg l-1", "mg x h(-1)", "mg x l(-1)", "mg · h/liter",
+    "mg · h/liter)", "mg · liter-1 · h", "mg × h/l", "mg*h/l", "mg--an", "mg.min.l-1", "mg.min/ml", "mg/kg",
+    "mg/kg/day", "mg/kg/week", "mg/l", "mg/m2", "mg/ml", "mg·h/l", "mg·h/ml", "mg•hour/l", "mi", "microg h ml(-1)",
+    "microg h/ml", "microg ml(-1) h)", "microg x h/ml", "microg/ml", "microgram/ml", "micrograms",
+    "micrograms ml-1", "micrograms.hr/ml", "micrograms/h/ml", "micrograms/ml", "microm", "micromol x h/l", "min",
+    "min(-1)", "min-1", "minute", "minutes", "ml", "ml per minute", "ml x min-1 x kg-1", "ml.min-1", "ml.min-1.kg-1",
+    "ml.min-1.kg-1 body weight", "ml/h/kg", "ml/kg", "ml/kg/h", "ml/kg/min", "ml/min", "ml/min x kg", "ml/min/1.73 m2",
+    "ml/min/1.73m2", "ml/min/kg", "mm", "mm-hrs", "months", "mumol/l.h", "ng h/ml", "ng ml(-1)", "ng ml-1", "ng x h/ml",
+    "ng · h/ml", "ng.hr/ml", "ng/ml", "ng/ml x h", "ng·h/ml", "ng× h/ml", "nm", "nm*hr", "nmol/l", "per kg", "pg ml-1",
+    "pmol min(-1) mg(-1)", "pmol x l(-1) x min(-1)", "pmol/l", "suv.min", "times", "u/kg", "ug/ml", "week", "weeks",
+    "years", "µg h/ml", "µg/kg", "µg/ml", "µg/ml*h", "μg", "μg l−1", "μg.h/ml", "μg/g", "μg/ml", "μg/ml ⋅ hour",
+    "μl/min/mg", "μl/min/mg protein", "μm", "μmol/l"
+
+  ]
+
+,
+
 
   "ROUTE": ["periodontally", "intracameraly", "intradermally", "pv", "oraly", "intracavernous", "intrabursaly", "qtt",
     "intracholangiopancreatic", "subretinal", "intraprostatical", "aortical", "vaginally", "intraportal",

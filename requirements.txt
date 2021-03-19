@@ -9,3 +9,7 @@ ujson==3.0.0
 xmltodict==0.12.0
 azure-storage-blob==12.7.1
 requests==2.25.1
+
+prodigy==1.10.6
+typer==0.3.2
+setuptools==52.0.0

@@ -6,7 +6,7 @@ import os
 from pkrex.utils import get_blob
 
 
-def run(azure_file_name: str, save_local: bool, out_dir: str):
+def run(azure_file_name: str, save_local: bool, out_dir: str, single_file: bool):
     blob = get_blob(inp_blob_name=azure_file_name)
 
     filename = "temp_annotations.jsonl"
@@ -26,6 +26,9 @@ def run(azure_file_name: str, save_local: bool, out_dir: str):
     uq_annotators = set([x["_session_id"] for x in annotations])
     db = connect()
     dataset_names = []
+
+    if single_file:
+        write_jsonl(os.path.join(out_dir, azure_file_name), annotations)
     for annotator in uq_annotators:
 
         annotator_dataset_name = annotator + "-done"
@@ -33,7 +36,7 @@ def run(azure_file_name: str, save_local: bool, out_dir: str):
         sub_annotations = [an for an in annotations if an["_session_id"] == annotator]
         if db.get_dataset(annotator_dataset_name):
             db.drop_dataset(annotator_dataset_name)
-        if write:
+        if write and not single_file:
             write_jsonl(os.path.join(out_dir, annotator_dataset_name + ".jsonl"), sub_annotations)
 
         db.add_dataset(annotator_dataset_name)
@@ -49,18 +52,23 @@ def run(azure_file_name: str, save_local: bool, out_dir: str):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--azure-file-name", type=str, help="Annotated file that we want to split",
-                        default='rex-pilot-ferran-output.jsonl'
+                        default='train-200-250-output.jsonl'
                         )
     parser.add_argument("--save-local", type=bool, help="Whether to save the jsonl file locally",
-                        default=False
+                        default=True
                         )
     parser.add_argument("--out-dir", type=str, help="Dir to write files",
-                        default='../data/annotations/pilot'
+                        default='../data/annotations/train'
+                        )
+
+    parser.add_argument("--single-file", type=bool, help="Whether to export results in a single file",
+                        default=False
                         )
 
     args = parser.parse_args()
 
-    run(azure_file_name=args.azure_file_name, save_local=args.save_local, out_dir=args.out_dir)
+    run(azure_file_name=args.azure_file_name, save_local=args.save_local, out_dir=args.out_dir,
+        single_file=args.single_file)
 
 
 if __name__ == '__main__':

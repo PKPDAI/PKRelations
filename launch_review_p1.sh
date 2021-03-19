@@ -1,0 +1,1 @@
+PRODIGY_ALLOWED_SESSIONS=ferran PRODIGY_PORT=8001 prodigy custom.rel.manual train200-250-p1-reviewed data/models/tokenizers/super-tokenizer data/annotations/train/train-200-250-output.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE --wrap -F recipes/rel_custom.py

@@ -67,7 +67,13 @@ python scripts/make_destructive_tokenizer.py \
    --out-path data/models/tokenizers/super-tokenizer
 ````
  
+Filter sentences annotated in P1 ready for P2
 
+````bash
+python scripts/filter_part_2.py \
+   --input-file data/annotations/dev/1/rex-dev0-200.jsonl \
+   --output-dir data/part2/dev/
+````
 
 ## Annotations
 
