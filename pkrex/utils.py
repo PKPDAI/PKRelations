@@ -3,7 +3,7 @@ import json
 import re
 import string
 import random
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import spacy
 from spacy.util import filter_spans
 from spacy.matcher import Matcher
@@ -48,7 +48,7 @@ def make_super_tagger(dictionaries_path: str, pk_ner_path: str):
                              "pattern": term} for term in patterns_dict["COMPARE"]]
 
     route_patterns = [{"label": "ROUTE", "pattern": term} for term in patterns_dict["ROUTE"]]
-    route_patterns = route_patterns + [{
+    route_patterns += [{
         "label": "ROUTE",
         "pattern": [{'ORTH': "intra"}, {'ORTH': "-"}, {}]
     }]
@@ -192,8 +192,8 @@ def clean_values(doc):
     new_ents_2 = []
     number_of_entities = len(new_ents)
     for i, ent in enumerate(new_ents):
-        if ent.label_ == "COMPARE" and ((i+1) < number_of_entities) and new_ents[i+1].label_ == "P-VALUE":
-            if ent.end != new_ents[i+1].start:
+        if ent.label_ == "COMPARE" and ((i + 1) < number_of_entities) and new_ents[i + 1].label_ == "P-VALUE":
+            if ent.end != new_ents[i + 1].start:
                 new_ents_2.append(ent)
         else:
             new_ents_2.append(ent)
@@ -204,11 +204,12 @@ def clean_values(doc):
 
 def is_exclusive_value(inp_ent, inp_doc):
     """The values that are considered exclusive are those with:
-     no digits, Table/Figure/Group/Compound + value, value-fold, value + times/patients or [value] """
+     no digits, Table/Figure/Group/Compound + value, value-fold, value + times/patients or [value], VALUE + - """
     doc_len = len(inp_doc)
     if has_digits(inp_ent.text):
         if all_digits(inp_ent.text):
             prev_tok_idx = inp_ent.start - 1
+            prev2_tok_idx = inp_ent.start - 2
             subs_tok_idx = inp_ent.end
             subs2_tok_idx = inp_ent.end + 1
             if prev_tok_idx >= 0 and subs_tok_idx < doc_len:
@@ -219,14 +220,27 @@ def is_exclusive_value(inp_ent, inp_doc):
                 if inp_doc[prev_tok_idx].text.lower() in ["group", "groups", "table", "tables", "compound", "compounds",
                                                           "figure", "figures", "study", "phase", "formulation",
                                                           "product", "fig", "tab", "day", "days", "equation", "eq",
-                                                          "trial", "trials", "subject"]:
+                                                          "trial", "trials", "subject", "fig.", "figs.", "tab.",
+                                                          "tabs.", "eq."]:
                     return True
+
+            if prev2_tok_idx >= 0:
+                if inp_doc[prev2_tok_idx].text.lower() in ["fig", "eq", "tab"] and inp_doc[prev_tok_idx].text.lower() \
+                        in ["."]:
+                    return True
+
+                if inp_doc[prev_tok_idx].text.lower() in ["-", "\u223c", "\u20105"] and inp_doc[
+                    prev2_tok_idx].text.lower() \
+                        not in ["+", "/"]:
+                    return True
+
             if subs_tok_idx < doc_len:
                 if inp_doc[subs_tok_idx].text.lower() in ["time", "times", "patient", "patients", "phases", "degrees",
-                                                          "sample", "samples", "subject", "subjects"]:
+                                                          "sample", "samples", "subject", "subjects", "-", "\u223c"]:
                     return True
             if subs2_tok_idx < doc_len:
-                if inp_doc[subs_tok_idx].text.lower() in ["-", "\u223c"] and inp_doc[subs2_tok_idx].text.lower() in \
+                if inp_doc[subs_tok_idx].text.lower() in ["-", "\u223c", "\u20105"] and inp_doc[
+                    subs2_tok_idx].text.lower() in \
                         ["time", "times", "fold", "folds"]:
                     return True
 
@@ -307,7 +321,11 @@ def get_link(inp_sentence: Dict) -> str:
     return paper_link
 
 
-def check_and_resample(sampled_subset: List, main_pool: List, ids_already_sampled: List):
+def check_and_resample(sampled_subset: List, main_pool: List, ids_already_sampled: List) -> Tuple[List, List]:
+    """
+    Checks whether the sampled subset has some sentences that were already present in previous annotations, and if so,
+    it replaces that sentence by another one in the main pool
+    """
     final_subset_cl = []
     for tmp_sentence in sampled_subset:
         if int(tmp_sentence['metadata']['SID']) in ids_already_sampled:
@@ -388,7 +406,7 @@ def has_digits(input_string):
 
 
 def all_digits(input_string):
-    return all(char.isdigit() for char in input_string)
+    return all(char.isdigit() for char in input_string.replace(".", "").replace(",", ""))
 
 
 def is_sentence_relevant(inp_sentence: Dict) -> bool:

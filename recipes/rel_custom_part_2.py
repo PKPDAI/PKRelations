@@ -123,7 +123,7 @@ valid_relations = {
         ("CHEMICAL", "VALUE"), ("CHEMICAL", "RANGE"),
         ("DISEASE", "VALUE"), ("DISEASES", "RANGE"),
         ("ROUTE", "VALUE"), ("ROUTE", "RANGE"),
-        ("CONTEXT", "VALUE")
+        ("CONTEXT", "VALUE"), ("CONTEXT", "RANGE")
     ],
 
     "DOSE": [("VALUE", "VALUE"), ("RANGE", "RANGE"), ("RANGE", "VALUE"), ("VALUE", "RANGE")]

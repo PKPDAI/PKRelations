@@ -52,7 +52,7 @@ def run(path_jsonl_pmids: str, path_jsonl_pmcs: str, slice_sizes: List, slice_na
         random.shuffle(final_subset)  # shuffle them again before writing
         out_file = os.path.join(output_dir, name + '.jsonl')
         write_jsonl(out_file, final_subset)
-        previous_size = previous_size + half_size
+        previous_size += half_size
 
 
 def main():
@@ -67,10 +67,10 @@ def main():
                         )
 
     parser.add_argument("--slice-sizes", nargs='+', help="Number of examples in each output file",
-                        default=[200, 200], type=int
+                        default=[310, 310, 210], type=int
                         )
     parser.add_argument("--slice-names", nargs='+', help="Names of the output files",
-                        default=['test0-200', 'train0-200'], type=str
+                        default=['train1500-1800', 'train1800-2100', 'test800-1000'], type=str
                         )
 
     parser.add_argument("--out-dir", type=str, help="Path to the output directory",

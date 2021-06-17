@@ -14,6 +14,5 @@
   "swipe_gestures": { "left": "accept", "right": "reject" },
   "split_sents_threshold": false,
   "writing_dir": "ltr",
-  "show_whitespace": false,
-  "relations_span_labels": ["UNITS","PK","TYPE_MEAS","COMPARE","RANGE","VALUE","CHEMICAL","DISEASE","SPECIES","ROUTE", "CONTEXT"]
+  "show_whitespace": false
 }

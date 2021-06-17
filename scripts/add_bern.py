@@ -1,7 +1,7 @@
 """This script gets an input JSONL in which we've already lablled PK, VALUE, RANGE, P-VALUE, ROUTE,COMPARE,
 TYPE_MEAS some UNITS and appends DRUGS, SPECIES, DISEASES by using BERN and resolving overlapping entities if needed"""
 import argparse
-from prodigy.util import read_jsonl, write_jsonl
+from pkrex.utils import read_jsonl, write_jsonl
 from pkrex.bern import get_drugs_diseases_species
 import spacy
 from tqdm import tqdm
@@ -15,8 +15,9 @@ def run(path_inp_file: str, resolve_overlapping: bool, drop_irrelevant: bool):
     old_sentences = list(read_jsonl(path_inp_file))
     for sentence in tqdm(old_sentences):
         extra_spans = get_drugs_diseases_species(inp_sentence=sentence["text"],
-                                                 inp_entities=["CHEMICAL", "DISEASE", "SPECIES"],
-                                                 inp_model=nlp_drugs)
+                                                 inp_entities=["CHEMICAL", "DISEASE", "SPECIES", "GENE", "MUTATION"],
+                                                 inp_model=nlp_drugs,
+                                                 use_local_bern=True)
         if extra_spans:
             all_spans = sentence["spans"] + extra_spans
             if resolve_overlapping:
@@ -31,6 +32,7 @@ def run(path_inp_file: str, resolve_overlapping: bool, drop_irrelevant: bool):
         else:
             out_sentences.append(sentence)
 
+    print(f"Writing to {path_inp_file}")
     write_jsonl(path_inp_file, out_sentences)
 
 
@@ -38,13 +40,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--path-inp-file", type=str, help="Annotated file that we want to add drugs, diseases and "
                                                           "species",
-                        default='../data/gold/base_files/all_selected_pmc.jsonl'
+                        default='data/gold/test800-1000.jsonl'
                         )
     parser.add_argument("--resolve-overlapping", type=bool, help="Whether to resolve overlapping spans",
                         default=True
                         )
 
-    parser.add_argument("--drop-irrelevant", type=bool, help="Whether to resolve overlapping spans",
+    parser.add_argument("--drop-irrelevant", type=bool, help="Whether to drop irrelevant sentences",
                         default=True
                         )
 

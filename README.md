@@ -22,8 +22,8 @@ python scripts/select_relevant_sentences.py \
 python scripts/sample_sentences.py \
    --path-jsonl-pmids data/gold/base_files/all_selected_pmid.jsonl \
    --path-jsonl-pmcs data/gold/base_files/all_selected_pmc.jsonl \
-   --slice-sizes 205 \
-   --slice-names dev0-200\
+   --slice-sizes 305 \
+   --slice-names train450-750\
    --out-dir data/gold/ \
    --path-already-sampled data/gold/already_sampled.txt
 ````
@@ -50,13 +50,19 @@ Add bern entities
 
 ````bash
 python scripts/add_bern.py \
-   --path-inp-file data/gold/dev0-200.jsonl \
+   --path-inp-file data/gold/test200-500.jsonl \
    --resolve-overlapping true
 ````
 
 ````bash
 python scripts/add_bern.py \
-   --path-inp-file data/gold/test0-200.jsonl \
+   --path-inp-file data/gold/train250-450.jsonl \
+   --resolve-overlapping true
+````
+
+````bash
+python scripts/add_bern.py \
+   --path-inp-file data/gold/train250-450.jsonl \
    --resolve-overlapping true
 ````
 
@@ -110,11 +116,24 @@ prodigy custom.rel.manual rex-simon-reviewed data/models/tokenizers/rex-tokenize
 
 ## Model development
 
-### Types of entities
+Output format expectation:
+````
+var = 
+    {
+        "parameter_mention": "renal CL",
 
-### Relation types
+        "central_measurement": {
+            "value/range": 3.0,
+            "units": "mL/min",
+            "comparative_term": "higher",
+            "type_measurement": "median"
+        },
 
-
-<!--
-![alt text](example.png) 
--->
+        "deviation_measurement": {
+            "value/range": 0.2,
+            "units": "mL/min",
+            "comparative_term": "",
+            "type_measurement": "+-"
+        }
+    }
+````

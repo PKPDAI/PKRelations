@@ -75,3 +75,39 @@ def test_written_numbers_2():
     doc2 = NER_MODEL(EXAMPLE_NO_VALUES_2)
     doc_ents_2 = [(ent.text, ent.label_) for ent in doc2.ents]
     assert doc_ents_2 == [('clearance', 'PK'), ('3', 'VALUE')]
+
+
+EXAMPLE_ABBR = "Fig. 3 displays all the results tab. 2 summarizes everything else except from 3 subjects. " \
+               "X was 2"
+
+
+def test_abbreviations():
+    doc = NER_MODEL(EXAMPLE_ABBR)
+    doc_ents = [(ent.text, ent.label_) for ent in doc.ents if ent.label_ != 'UNITS']
+    assert doc_ents == [("2", "VALUE")]
+
+
+EXAMPLE_DASHES = "X experienced a 3-fold increase and the y was 3-times higher than the w. However, u was in the " \
+                 "range of 4-5 mg/dl."
+
+EXAMPLE_DASHES_2 = "The MEDI-524 and its Fc variant MEDI-524-YTE (having an increased affinity to FcRn) in monkeys," \
+                   "oral administration of the drug and its 2-hydroxypropyl-beta-cyclodextrin (HP-beta-CyD) complex"
+
+EXAMPLE_DASHES_3 = "However, the area under the curve and peak levels of RG were increased by 5.6-fold and 5.1-fold, " \
+                   "respectively, in OATP1B2-knockout mice. "
+
+EXAMPLE_DASHES_4 = "However, the area under the curve and peak levels of RG were increased by 5.6-fold and 5.1-fold, " \
+                   "respectively, in OATP1B2-knockout mice. "
+
+
+def test_fold_numerical():
+    doc = NER_MODEL(EXAMPLE_DASHES)
+    doc_ents = [(ent.text, ent.label_) for ent in doc.ents if ent.label_ != 'UNITS']
+    assert doc_ents == [("higher", "COMPARE"), ("4-5", "RANGE")]
+    doc = NER_MODEL(EXAMPLE_DASHES_2)
+    doc_ents = [(ent.text, ent.label_) for ent in doc.ents if ent.label_ != 'UNITS']
+    assert "VALUE" not in [x[1] for x in doc_ents]
+    doc = NER_MODEL(EXAMPLE_DASHES_3)
+    doc_ents = [(ent.text, ent.label_) for ent in doc.ents if ent.label_ != 'UNITS']
+    assert "VALUE" not in [x[1] for x in doc_ents]
+

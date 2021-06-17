@@ -105,11 +105,5 @@ valid_relations = {
                 ("TYPE_MEAS", "RANGE"), ("COMPARE", "RANGE"), ("SPECIES", "RANGE"), ("CHEMICAL", "RANGE"),
                 ("DISEASES", "RANGE"), ("UNITS", "RANGE"), ("COVARIATES", "RANGE"), ("ROUTE", "RANGE")]
 
-    # "D_MIN": [("VALUE", "VALUE")],
-    # "D_MAX": [("VALUE", "VALUE")],
-    # "DOSAGE": [("VALUE", "VALUE")],
-    # "COMPLEMENT": [("COVARIATES", "COVARIATES")],
-    # "C_MIN": [("PK", "VALUE")],
-    # "C_MAX": [("PK", "VALUE")],
 
 }
