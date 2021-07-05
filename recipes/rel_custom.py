@@ -23,6 +23,7 @@ from prodigy.recipes.rel import manual as rel_manual
     wrap=("Wrap lines in the UI by default (instead of showing tokens in one row)", "flag", "W", bool),
     exclude=("Comma-separated list of dataset IDs whose annotations to exclude", "option", "e", split_string),
     hide_arrow_heads=("Hide the arrow heads visually", "option", "HA", bool),
+    #  correct_examples=("Whether you are launching the recipe to fix other examples", "flag", "ce", bool)
 )
 def custom_rel_manual(dataset: str,
                       spacy_model: str,
@@ -36,7 +37,11 @@ def custom_rel_manual(dataset: str,
                       add_ents: bool = False,
                       add_nps: bool = False,
                       wrap: bool = False,
-                      hide_arrow_heads: bool = False):
+                      hide_arrow_heads: bool = False,
+                      #  correct_examples: bool = False
+                      ):
+
+
     components = rel_manual(
         dataset=dataset,
         spacy_model=spacy_model,
@@ -52,8 +57,9 @@ def custom_rel_manual(dataset: str,
         wrap=wrap,
         hide_arrow_heads=hide_arrow_heads, )
 
-    components["config"]["feed_overlap"] = True
-    components["config"]["force_stream_order"] = True
+   # components["config"]["feed_overlap"] = True
+   # components["config"]["force_stream_order"] = True
+
     # Add callback to the components returned by the recipe
     components["validate_answer"] = validate_answer
     components["config"]["global_css"] = ".prodigy-button-reject, .prodigy-button-ignore {display: none}"
@@ -104,6 +110,5 @@ valid_relations = {
                 ("DISEASES", "VALUE"), ("UNITS", "VALUE"), ("COVARIATES", "VALUE"), ("ROUTE", "VALUE"),
                 ("TYPE_MEAS", "RANGE"), ("COMPARE", "RANGE"), ("SPECIES", "RANGE"), ("CHEMICAL", "RANGE"),
                 ("DISEASES", "RANGE"), ("UNITS", "RANGE"), ("COVARIATES", "RANGE"), ("ROUTE", "RANGE")]
-
 
 }

@@ -294,7 +294,7 @@ def read_jsonl(file_path):
     file_path (unicode / Path): The file path.
     YIELDS: The loaded JSON contents of each line.
     """
-    with Path(file_path).open('r', encoding='utf8') as f:
+    with Path(file_path).open(encoding='utf8') as f:
         for line in f:
             try:  # hack to handle broken jsonl
                 yield ujson.loads(line.strip())
@@ -447,3 +447,41 @@ def add_annotator_meta(inp_dict, base_dataset_name):
     """Adds the annotator session id into the prodigy annotated instance dictionary"""
     inp_dict['meta']['source'] = inp_dict['_session_id'].replace(base_dataset_name, "")
     return inp_dict
+
+
+def print_ner_scores(inp_dict: Dict, is_spacy: bool):
+    """
+    @param is_spacy: whether the dictionary comes as an output from spacy model
+    @param inp_dict: Dictionary with keys corresponding to entity types and subkeys to metrics
+    e.g. {'PK': {'ent_type': {..},{'partial': {..},{'strict': {..} }}
+    @return: Prints summary of metrics
+    """
+    if is_spacy:
+        token_acc = round(inp_dict['token_acc'] * 100, 2)
+        print(f"Token accuracy: {token_acc}")
+        per_entity_metrics = inp_dict['ents_per_type']
+        for ent_type in per_entity_metrics.keys():
+            print(f" ====== Stats for entity {ent_type} ======")
+            p = round(per_entity_metrics[ent_type]['p'] * 100, 2)
+            r = round(per_entity_metrics[ent_type]['r'] * 100, 2)
+            f1 = round(per_entity_metrics[ent_type]['f'] * 100, 2)
+            print(f" Precision:\t {p}%")
+            print(f" Recall:\t {r}%")
+            print(f" F1:\t\t {f1}%")
+    else:
+        for ent_type in inp_dict.keys():
+            print(f"====== Stats for entity {ent_type} ======")
+            for metric_type in inp_dict[ent_type].keys():
+                if metric_type in ['partial', 'strict']:
+                    print(f" === {metric_type} match: === ")
+                    precision = inp_dict[ent_type][metric_type]['precision']
+                    recall = inp_dict[ent_type][metric_type]['recall']
+                    f1 = inp_dict[ent_type][metric_type]['f1']
+
+                    p = round(precision * 100, 2)
+                    r = round(recall * 100, 2)
+                    f1 = round(f1 * 100, 2)
+
+                    print(f" Precision:\t {p}%")
+                    print(f" Recall:\t {r}%")
+                    print(f" F1:\t\t {f1}%")

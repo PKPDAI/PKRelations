@@ -15,21 +15,37 @@ SAMPLE_SENTENCES = [
     "absorbed and reached Cmax 21.63 \u00b1 3.62 ng/mL at approximately 2.67 h, and t1/2 was 3.70 \u00b1 0.99 h. "
 ]
 
+EXPECTED_TOKENS = [
+    ['Study', 'population', 'A', '(', 'n', '=', '8', ')', 'The', 'mean', 'AUC', '(', '0', '-', 'inf',
+     ')', 'x', 'was', '4', '.', '5', 'h', '/', 'l', '+', '-', '3', 'h', '/', 'l', 'and', 'aortically',
+     '3', ',', '9', '.'],
+    ['Additional', 'systemic', 'clearance', 'of', '15', 'L', '/', 'h', '.', '37'],
+    ['The', '90', '%', 'CI', 'Cmax', '(', '18', '.', '4', '%', '~', '64', '.', '7', '%', ')', ',', 'AUC', '0', '–', 't',
+     '(', '28', '.', '9', '%', '~', '68', '.', '5', '%', ')', 'and', 'AUC', '0', '–', '∞', '.', '1'],
+    ['The', 'clearance', 'was', '2', '≈', '15', '.', '3', 'L', '/', 'h', '+', '-', '2', 'ml', '/', 'h', '.'],
+    ['The', 'clearance', 'was', '2', '≈', '≈', '15', '.', '3', 'L', '/', 'h', '+', '-', '2', 'ml', '/', 'h', '.'],
+    ['Ė', 'À', '-', '454', 'Ą', 'Ę'],
+    ['After', '2', 'mg', '/', 'kg', 'intravenous', 'injection', ',', 'the', 'concentration', 'of', 'DHM', 'reached',
+     'a', 'maximum', 'of', '165', '.', '67', '±', '16', '.', '35', 'ng', '/', 'mL', ',', 'and', 't', '1', '/', '2',
+     'was', '2', '.', '05', '±', '0', '.', '52', 'h', '.', 'However', ',', 'after', 'the', 'oral', 'administration',
+     'of', '20', 'mg', '/', 'kg', 'DHM', ',', 'DHM', 'was', 'not', 'readily', 'absorbed', 'and', 'reached', 'Cmax',
+     '21', '.', '63', '±', '3', '.', '62', 'ng', '/', 'mL', 'at', 'approximately', '2', '.', '67', 'h', ',', 'and', 't',
+     '1', '/', '2', 'was', '3', '.', '70', '±', '0', '.', '99', 'h', '.']
+]
+
 
 def test_tokenizer():
+    """
+    Sequence idea:
+    1. Split by unicode characters
+    2. Split by non-alphanumeric
+    3. Separate numeric and non-numeric parts
+    """
     spacy_model = spacy.blank('en')
     spacy_model = replace_tokenizer(spacy_model)
     tok_exp = spacy_model.tokenizer.explain(SAMPLE_SENTENCES[-1])
     print("\n============ NEW TOKENIZER ============\n")
     for t in tok_exp:
         print(t[1], "\t", t[0])
-
-    assert True
-
-
-"""
-Sequence idea: 
-1. Split by unicode characters
-2. Split by non-alphanumeric
-3. Separate numeric and non-numeric parts
-"""
+    predicted_tokens = [[t[1] for t in spacy_model.tokenizer.explain(x)] for x in SAMPLE_SENTENCES]
+    assert predicted_tokens == EXPECTED_TOKENS

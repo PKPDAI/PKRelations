@@ -137,3 +137,17 @@ var =
         }
     }
 ````
+
+Render template
+
+https://stackoverflow.com/questions/31965558/how-to-display-a-variable-in-html
+
+## TO DO
+
+```` shell
+python scripts/train_pkrex.py \
+   --training-file-path data/pubmedbert_tokenized/tmp_train.jsonl \
+   --val-file-path data/pubmedbert_tokenized/tmp_val.jsonl \
+   --output-dir results \
+   --model-config-file configs/config-biobert.json
+````

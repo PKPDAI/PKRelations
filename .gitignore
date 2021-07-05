@@ -82,3 +82,4 @@ cython_debug/
 /labels_1.jsonl
 /labels_2.jsonl
 /data/part2/
+/brat/

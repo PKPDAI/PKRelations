@@ -26,7 +26,7 @@ def get_all_spans(annotations: List[Dict], label: str) -> List[str]:
 
 
 def main(
-        input_file: str = typer.Option(default="data/annotations/P1/to_review/test-all.jsonl",
+        input_file: str = typer.Option(default="data/annotations/P1/preprocessed/test-all-ready.jsonl",
                                        help="File to perform checks on"),
 
         out_dir: str = typer.Option(default="data/stats/test_set",
@@ -86,24 +86,6 @@ def main(
 
     pd.DataFrame(allentries).to_csv(os.path.join(out_dir, f"all_values_context.csv"))
 
-    # all_units = [x for x in sorted(list(set(all_units + tmp_units)), key=len) if x not in units_remove]
-    # tmp_type_meas = [token.lower() for token in get_all_spans(annotations=annotations, label='TYPE_MEAS')]
-    # all_type_meas = [x for x in sorted(list(set(all_type_meas + tmp_type_meas)), key=len) if
-    #                 x not in type_meas_remove]
-    # tmp_compare = [token.lower() for token in get_all_relevant_spans(annotations=annotations, label='COMPARE')]
-    # all_compare = [x for x in sorted(list(set(all_compare + tmp_compare)), key=len) if x not in compare_remove]
-
-
-#
-# print(all_units)
-# print(all_type_meas)
-# print(all_compare)
-#
-# entity_dictionaries["TYPE_MEAS"] = all_type_meas
-# entity_dictionaries["COMPARE"] = all_compare
-# entity_dictionaries["UNITS"] = all_units
-# with open(base_dicts, "w", encoding="utf8") as outfile:
-#    json.dump(entity_dictionaries, outfile, indent=4)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""This script splits a jsonl file with prodigy annotated data in multiple files, one per annotator"""
+
 import typer
 from prodigy.util import read_jsonl, write_jsonl
 import os

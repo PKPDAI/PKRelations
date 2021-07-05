@@ -1,14 +1,10 @@
 import json
-
-from spacy import displacy
-
 from pkrex.annotation_preproc import fix_incorrect_dvals, view_relations_json, get_cval_entities
 
 with open('test_data.json', 'r') as test_file:
     data = test_file.read()
     test_data = json.loads(data)
 
-# parse file
 
 EXAMPLES_BAD_DIRECTION = test_data["EXAMPLES_BAD_DIRECTION"]
 

@@ -1,0 +1,28 @@
+{
+  "run_name": "biobert-ner-first-train-128",
+  "base_model": "dmis-lab/biobert-v1.1",
+
+  "n_workers_dataloader": 12,
+  "gpus": true,
+  "seed": 1,
+
+  "learning_rate": 2e-5,
+  "max_epochs": 20,
+  "max_length": 128,
+  "batch_size": 8,
+  "val_batch_size": 64,
+  "eps": 1e-8,
+
+  "tensorboard_logger": true,
+  "tag_type": "bio",
+  "early_stopping": false,
+  "early_stopping_patience": 5,
+
+  "gradient_clip_val": 1.0,
+  "weight_decay": 0.01,
+  "stochastic_weight_avg": true,
+
+  "lr_warmup": false,
+  "weighted_loss": false,
+  "final_train": false
+}
