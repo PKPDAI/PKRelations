@@ -485,3 +485,4 @@ def print_ner_scores(inp_dict: Dict, is_spacy: bool):
                     print(f" Precision:\t {p}%")
                     print(f" Recall:\t {r}%")
                     print(f" F1:\t\t {f1}%")
+

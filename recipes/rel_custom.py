@@ -40,8 +40,6 @@ def custom_rel_manual(dataset: str,
                       hide_arrow_heads: bool = False,
                       #  correct_examples: bool = False
                       ):
-
-
     components = rel_manual(
         dataset=dataset,
         spacy_model=spacy_model,
@@ -57,8 +55,8 @@ def custom_rel_manual(dataset: str,
         wrap=wrap,
         hide_arrow_heads=hide_arrow_heads, )
 
-   # components["config"]["feed_overlap"] = True
-   # components["config"]["force_stream_order"] = True
+    # components["config"]["feed_overlap"] = True
+    components["config"]["force_stream_order"] = True
 
     # Add callback to the components returned by the recipe
     components["validate_answer"] = validate_answer

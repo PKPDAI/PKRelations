@@ -223,8 +223,10 @@ def get_micro_macro_f1s(inp_results_dict: Dict) -> Dict:
     out_results['macro']['partial'] = sum(macro_partial_f1s) / len(macro_partial_f1s)
     # Micro avg
     total_support = sum([x['support'] for x in inp_results_dict.values()])
-    micro_strict_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()])
-    micro_partial_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()])
+    micro_strict_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()
+                           if v['strict']['f1'] is not None])
+    micro_partial_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()
+                            if v['strict']['f1'] is not None])
     out_results['micro']['strict'] = micro_strict_f1
     out_results['micro']['partial'] = micro_partial_f1
     return out_results

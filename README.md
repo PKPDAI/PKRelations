@@ -146,8 +146,30 @@ https://stackoverflow.com/questions/31965558/how-to-display-a-variable-in-html
 
 ```` shell
 python scripts/train_pkrex.py \
-   --training-file-path data/pubmedbert_tokenized/tmp_train.jsonl \
-   --val-file-path data/pubmedbert_tokenized/tmp_val.jsonl \
+   --training-file-path data/pubmedbert_tokenized/train-all-reviewed-clean-4.jsonl \
+   --val-file-path data/pubmedbert_tokenized/test-all-ready-fixed-5.jsonl \
    --output-dir results \
    --model-config-file configs/config-biobert.json
 ````
+
+
+training_almost_ready includes:
+
+0-200
+
+200-250
+
+250-450
+
+450-750
+
+750-1150
+
+1150-1500
+
+Missing 1500-1800
+
+1800-2100
+
+
+

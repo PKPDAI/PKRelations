@@ -1,0 +1,1 @@
+PRODIGY_PORT=8001 prodigy custom.rel.manual strain-all-reviewed-clean data/models/tokenizers/super-tokenizer data/annotations/P1/ready/train-all-reviewed-clean-4.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE --wrap -F recipes/rel_custom.py

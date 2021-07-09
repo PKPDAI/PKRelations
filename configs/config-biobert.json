@@ -1,5 +1,5 @@
 {
-  "run_name": "biobert-ner-first-train-128",
+  "run_name": "first-test-all-128",
   "base_model": "dmis-lab/biobert-v1.1",
 
   "n_workers_dataloader": 12,

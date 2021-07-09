@@ -22,13 +22,23 @@ def main(
         output_dir: Path = typer.Option(default="results/",
                                         help="Output directory"),
         model_config_file: Path = typer.Option(default="configs/config-biobert.json"),
-        print_tokens: bool = typer.Option(default=True)
+        print_tokens: bool = typer.Option(default=True),
+
+        debug_mode: bool = typer.Option(default=False)
 
 ):
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     with open(model_config_file) as cf:
         config = json.load(cf)
+
+    limit_train_batches = 1.
+    limit_val_batches = 1.
+    if debug_mode:
+        config["n_workers_dataloader"] = 0
+        config["gpus"] = False
+        limit_train_batches = 0.1
+        limit_val_batches = 1.
 
     assert config['tag_type'] in ["bio", "biluo"]
 
@@ -120,7 +130,9 @@ def main(
             deterministic=True,
             log_every_n_steps=1,
             gradient_clip_val=config["gradient_clip_val"],
-            stochastic_weight_avg=config["stochastic_weight_avg"]
+            stochastic_weight_avg=config["stochastic_weight_avg"],
+            limit_train_batches=limit_train_batches,
+            limit_val_batches=limit_val_batches
         )
     else:
         to_print = 20 * "=" + " Doing final train with training + validation dataset ".upper() + 20 * "="
@@ -139,7 +151,8 @@ def main(
             deterministic=True,
             log_every_n_steps=1,
             gradient_clip_val=config["gradient_clip_val"],
-            limit_val_batches=0  # do not validate
+            limit_val_batches=0,  # do not validate
+            limit_train_batches=limit_train_batches
         )
 
     if config['early_stopping']:

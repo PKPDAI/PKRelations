@@ -1,7 +1,7 @@
 """Gets a jsonl file and removes entities that are not part of relations before we can use it for training"""
 import hashlib
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 import prodigy
 import typer
@@ -11,6 +11,19 @@ from tqdm import tqdm
 from pkrex.annotation_preproc import fix_incorrect_dvals, swap_clear_incorrect, check_rel_tokens_entities, \
     d_val_pointing, remove_irrelevant_entities, visualize_relations_brat, simplify_annotation, keep_relevant_fields, \
     remove_ent_by_type
+
+
+def remove_duplicated_annotations(inp_annotations: List[Dict], unique_key: str):
+    print(f"Length before removing duplicates: {len(inp_annotations)}")
+    uq_ids = []
+    out_annot = []
+    for ann in inp_annotations:
+        if ann[unique_key] not in uq_ids:
+            out_annot.append(ann)
+            uq_ids.append(ann[unique_key])
+    print(f"Length after removing duplicates: {len(out_annot)}")
+    return out_annot
+
 
 REPL_DICT = {"\u223c": "~",
              "\u2061": " "}
@@ -33,11 +46,12 @@ def replace_conflicting_tokens(inp_annotation):
 
 
 def main(
-        input_file_path: Path = typer.Option(default="data/annotations/P1/reviewed/test-all-ready-fixed-5.jsonl",
+        input_file_path: Path = typer.Option(default="data/annotations/P1/preprocessed/test-all-ready-fixed-6.jsonl",
                                              help="File that we want to preprocess"),
 
-        output_file_path: Path = typer.Option(default="data/annotations/P1/preprocessed/test-all-ready-fixed-5.jsonl",
-                                              help="Path to the output file"),
+        output_file_path: Path = typer.Option(
+            default="data/annotations/P1/ready/test-all-ready-fixed-6.jsonl",
+            help="Path to the output file"),
 
         remove_ents=typer.Option(default=["TYPE_MEAS"],
                                  help="Entities and relations to remove"),
@@ -48,11 +62,24 @@ def main(
         display_relations: bool = typer.Option(default=True,
                                                help="Whether to review the annotated data"),
 
+        remove_sentences_with_latex_tags: bool = typer.Option(default=True,
+                                                              help="Remove the sentences with usepackage{ inside")
+
 ):
     output_dataset = [preprocess_review_sentence(prodigy_annotation=sentence, idx=idx, keep_pk=keep_pk_ent,
                                                  remove_ents=remove_ents)
                       for idx, sentence in tqdm(enumerate(read_jsonl(input_file_path)))]
+    if remove_sentences_with_latex_tags:
+        output_dataset = [x for x in output_dataset if "usepackage{" not in x["text"]]
 
+    output_dataset = remove_duplicated_annotations(inp_annotations=output_dataset, unique_key="_input_hash")
+    a = []
+    for x in output_dataset:
+        if x["metadata"] not in a:
+            a.append(x["metadata"])
+        else:
+            print("Potential duplicate: ")
+            print(x)
     if display_relations:
         visualize_relations_brat(inp_annotations=output_dataset, file_path="brat/rel_brat_template.html")
 
@@ -61,6 +88,7 @@ def main(
 
 def preprocess_review_sentence(prodigy_annotation: Dict, idx: int, keep_tokens: bool = True,
                                keep_pk: bool = True, remove_ents=None) -> Dict:
+    print(idx)
     # 1. Rehash sentence hash based on text input
     prodigy_annotation = replace_conflicting_tokens(prodigy_annotation)
     prodigy_annotation['sentence_hash'] = hashlib.sha1(prodigy_annotation['text'].encode()).hexdigest()  # rehash

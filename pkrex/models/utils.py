@@ -1,6 +1,6 @@
 import gc
 import torch
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 from pytorch_lightning.loggers import LightningLoggerBase, TensorBoardLogger
 from tokenizers import Encoding
 from torch.utils.data import DataLoader, Dataset
@@ -27,13 +27,40 @@ def get_ner_metrics(inp_dict):
     return p, r, f1
 
 
-def align_tokens_and_annotations_bilou(tokenized: Encoding, annotations: Dict, example: Dict):
+def get_unique_spans_from_rels(rels: List[Dict]):
+    out_spans = []
+    for r in rels:
+        for i in ['head_span', 'child_span']:
+            if r[i] not in out_spans:
+                out_spans.append(r[i])
+    out_spans = sorted(out_spans, key=lambda d: (d['start'], d['end'], d['label']))
+    return out_spans
+
+
+def assign_index_to_spans(span_list: List[Dict]) -> List[Dict]:
+    if 'start' in span_list[0]:
+        span_list = sorted(span_list, key=lambda d: (d['start'], d['end'], d['label']))
+    else:
+        span_list = sorted(span_list, key=lambda d: (d['token_start'], d['token_end'], d['label']))
+    out_spans = []
+    for idx, sp in enumerate(span_list):
+        sp['ent_id'] = idx
+        out_spans.append(sp)
+    return out_spans
+
+
+def align_tokens_and_annotations_bilou(tokenized: Encoding, annotations: List[Dict], example: Dict,
+                                       relations: List[Dict]):
+    annotations_sorted = assign_index_to_spans(sorted(annotations, key=lambda d: (d['start'], d['end'], ['label'])))
+    annotations_from_rel = assign_index_to_spans(get_unique_spans_from_rels(rels=relations))
+    assert annotations_sorted == annotations_from_rel
+
     tokens = tokenized.tokens
     aligned_labels_bio = ["O"] * len(tokens)  # Make a list to store our labels the same length as our tokens
     aligned_labels_bilou = ["O"] * len(tokens)
 
     entity_tokens = []
-    for anno in annotations:
+    for anno in annotations_sorted:
         annotation_token_ix_set = (
             set()
         )  # A set that stores the token indices of the annotation
@@ -55,7 +82,8 @@ def align_tokens_and_annotations_bilou(tokenized: Encoding, annotations: Dict, e
                  end=anno["end"],
                  token_start=min(annotation_token_ix_set),
                  token_end=max(annotation_token_ix_set),
-                 label=anno["label"]
+                 label=anno["label"],
+                 ent_id=anno["ent_id"]
                  )
         )
 
@@ -83,7 +111,49 @@ def align_tokens_and_annotations_bilou(tokenized: Encoding, annotations: Dict, e
                 if prefix == "L":
                     prefix = "I"
                 aligned_labels_bio[token_ix] = f"{prefix}-{anno['label']}"
-    return aligned_labels_bilou, aligned_labels_bio, entity_tokens
+
+    relations_bert = construct_relations_bert(original_relations=relations, new_entities=entity_tokens)
+    assert len(relations) == len(relations_bert)
+    return aligned_labels_bilou, aligned_labels_bio, entity_tokens, relations_bert
+
+
+def construct_relations_bert(original_relations: List[Dict], new_entities: List[Dict]) -> List[Dict]:
+    """
+    Returns relations with the new entities in the form of
+    {
+    "head_span": (entity span head),
+    "child_span": (entity span child),
+    "head_span_idx": int,
+    "child_span_idx": int,
+    "relation_label": str
+    }
+    """
+    out_relations = []
+
+    for tmp_rel in original_relations:
+        hs = tmp_rel['head_span']
+        cs = tmp_rel['child_span']
+        newhs = map_old_span_to_new(inp_old_span=hs, new_spans=new_entities)
+        newcs = map_old_span_to_new(inp_old_span=cs, new_spans=new_entities)
+        new_rel = dict(head_span=newhs, child_span=newcs,
+                       head_span_idx=newhs['ent_id'], child_span_idx=newcs['ent_id'],
+                       label=tmp_rel['label']
+                       )
+        out_relations.append(new_rel)
+
+    return out_relations
+
+
+def map_old_span_to_new(inp_old_span: Dict, new_spans: List[Dict]) -> Dict:
+    out_sp = None
+    for nsp in new_spans:
+        if nsp['start'] == inp_old_span['start'] and nsp['end'] == inp_old_span['end']:
+            out_sp = nsp
+            break
+    if out_sp is not None:
+        return out_sp
+    else:
+        raise ValueError("ERROR FINDING RELATION SPAN INTO THE NEW BERT-BASED SPANS")
 
 
 def check_correct_alignment(tokenized: Encoding, entity_token_ids: set, annotation: Dict):
@@ -269,3 +339,54 @@ class PKDatasetInference(Dataset):
 
     def __len__(self):
         return len(self.encodings.encodings)
+
+
+def generate_all_possible_rels(inp_entities: List[Dict]) -> List[Dict[Any, dict]]:
+    """
+    Given a list of entities in the form of
+    [{'token_start':...,'token_end':...,'label':...,'ent_id':...},{...}]
+    it return all the possible pairwise combinations
+    """
+    possible_rels = []
+    inp_entities = sorted(inp_entities, key=lambda d: d['ent_id'])
+    for i, ent in enumerate(inp_entities):
+        if i + 1 != len(inp_entities):
+            for j in range(i + 1, len(inp_entities)):
+                possible_rels.append(
+                    dict(
+                        head=ent,
+                        child=inp_entities[j]
+                    )
+                )
+    return possible_rels
+
+
+ACCEPTABLE_ENTITY_COMBINATIONS = [
+    ("PK", "VALUE"), ("PK", "RANGE"), ("VALUE", "PK"), ("RANGE", "PK"),  # C_VAL relations
+    ("VALUE", "VALUE"), ("RANGE", "RANGE"), ("RANGE", "VALUE"), ("VALUE", "RANGE"),  # D_VAL relations
+
+    # RELATED relations
+    ("UNITS", "VALUE"), ("UNITS", "RANGE"), ("VALUE", "UNITS"), ("RANGE", "UNITS"),
+    ("COMPARE", "VALUE"), ("COMPARE", "RANGE"), ("VALUE", "COMPARE"), ("RANGE", "COMPARE")
+
+]
+
+
+def filter_not_allowed_rels(inp_possible_rels: List[Dict[Any, dict]],
+                            allowed_combos=None) -> List[Dict[Any, dict]]:
+    """
+    Give a list of possible relations  it returns the ones allowed according to the filtering list allowed_combos
+    """
+    if allowed_combos is None:
+        allowed_combos = ACCEPTABLE_ENTITY_COMBINATIONS
+    if allowed_combos == "all":
+        return inp_possible_rels
+
+    else:
+        assert isinstance(allowed_combos, list)
+        out_possible_relations = []
+        for tmp_rel in inp_possible_rels:
+            tmp_combo = (tmp_rel["head"]["label"], tmp_rel["child"]["label"])
+            if tmp_combo in allowed_combos:
+                out_possible_relations.append(tmp_rel)
+    return out_possible_relations

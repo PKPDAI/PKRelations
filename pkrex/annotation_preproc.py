@@ -259,7 +259,7 @@ def swap_clear_incorrect(annotation: Dict) -> Dict:
     mapper = {
         "TYPE_MEAS": ["+-", "±", "\u00b1", "+/-"]
     }
-    to_exclude = ["=", "approximately", "about", "close to"]
+    to_exclude = ["=", "approximately", "about", "close to", "ca.", "~"]
     # Fix entity dictionaries in the spans field
     new_entities = []
     for entity in annotation['spans']:
@@ -485,14 +485,17 @@ def view_entities_terminal(inp_text, character_annotation):
 
 
 def view_all_entities_terminal(inp_text, character_annotations):
+    COLOR_MAP = {"PK": "red", "VALUE": "blue", "UNITS": "green", "RANGE": "cyan", "COMPARE": "magenta"}
+
     if character_annotations:
         character_annotations = sorted(character_annotations, key=lambda anno: anno['start'])
         sentence_text = ""
         end_previous = 0
         for annotation in character_annotations:
+            c = COLOR_MAP[annotation['label']]
             sentence_text += inp_text[end_previous:annotation["start"]]
             sentence_text += colored(inp_text[annotation["start"]:annotation["end"]],
-                                     'green', attrs=['reverse', 'bold'])
+                                     c, attrs=['reverse', 'bold'])
             end_previous = annotation["end"]
         sentence_text += inp_text[end_previous:]
         return sentence_text
@@ -577,11 +580,18 @@ def get_doc_data_js(annot: Dict):
         "entities": entities,
         "relations": relations
     }
-    js_doc_data = "{" + f"""
-    text: "{annot_brat_format['text']}",
-    entities: {str(annot_brat_format['entities'])},
-    relations: {str(annot_brat_format['relations'])}
-    """ "}"
+    if '"' not in annot_brat_format['text']:
+        js_doc_data = "{" + f"""
+        text: "{annot_brat_format['text']}",
+        entities: {str(annot_brat_format['entities'])},
+        relations: {str(annot_brat_format['relations'])}
+        """ "}"
+    else:
+        js_doc_data = "{" + f"""
+                text: " ---------- THIS TEXT CONTAINS DOUBLE QUOTES AND CAN'T BE DISPLAYED PROPERLY -------- ",
+                entities: [],
+                relations: []
+                """ "}"
 
     return js_doc_data
 

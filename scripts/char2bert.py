@@ -28,19 +28,24 @@ def main(
         for i, example in tqdm(enumerate(prodigy_annotations)):
             text = example['text']
             annotations = example['spans']
+            relations = example['relations']
             tokenized_text = tokenizer(text, return_offsets_mapping=True)
-            new_labels_bilou, new_labels_bio, entity_tokens = align_tokens_and_annotations_bilou(
+            new_labels_bilou, new_labels_bio, entity_tokens, relations_bert = align_tokens_and_annotations_bilou(
                 tokenized=tokenized_text[0],
                 annotations=annotations,
-                example=example
+                example=example,
+                relations=relations
             )
 
             assert len(tokenized_text[0]) == len(new_labels_bilou) == len(new_labels_bio)
             # visualise_alignment(inp_tokens=tokenized_text[0].tokens, aligned_labels=new_labels_bio)
 
-            sentence_ready = get_ready(bert_tokens=tokenized_text[0], bio_tags=new_labels_bio,
+            sentence_ready = get_ready(bert_tokens=tokenized_text[0],
+                                       bio_tags=new_labels_bio,
                                        bilou_tags=new_labels_bilou,
-                                       bert_entity_tokens=entity_tokens, original_text=text)
+                                       bert_entity_tokens=entity_tokens,
+                                       original_text=text,
+                                       relations=relations_bert)
 
             sentence_ready["metadata"] = example["metadata"] if "metadata" in example.keys() else dict()
             out_annotations.append(sentence_ready)
@@ -50,7 +55,7 @@ def main(
         write_jsonl(file_path=out_path, lines=out_annotations)
 
 
-def get_ready(bert_tokens, bio_tags, bilou_tags, bert_entity_tokens, original_text):
+def get_ready(bert_tokens, bio_tags, bilou_tags, bert_entity_tokens, original_text, relations):
     prodigy_sentence = dict(text=original_text)
     tokens = []
     for i, (tok_text, tok_id, ch_offsets) in enumerate(zip(bert_tokens.tokens, bert_tokens.ids, bert_tokens.offsets)):
@@ -59,6 +64,7 @@ def get_ready(bert_tokens, bio_tags, bilou_tags, bert_entity_tokens, original_te
     prodigy_sentence["spans"] = bert_entity_tokens
     prodigy_sentence["bio_tags"] = bio_tags
     prodigy_sentence["bilou_tags"] = bilou_tags
+    prodigy_sentence["relations"] = relations
     return prodigy_sentence
 
 
