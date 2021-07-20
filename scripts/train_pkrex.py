@@ -13,16 +13,16 @@ import os
 
 
 def main(
-        training_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/tmp_train.jsonl",
+        training_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/train-all-reviewed-clean-4.jsonl",
                                                 help="Path to the jsonl file with the training data"),
 
-        val_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/tmp_val.jsonl",
+        val_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/test-all-ready-fixed-6.jsonl",
                                            help="Path to the jsonl file with the development data"),
 
         output_dir: Path = typer.Option(default="results/",
                                         help="Output directory"),
         model_config_file: Path = typer.Option(default="configs/config-biobert.json"),
-        print_tokens: bool = typer.Option(default=True),
+        print_tokens: bool = typer.Option(default=False),
 
         debug_mode: bool = typer.Option(default=False)
 
@@ -37,8 +37,8 @@ def main(
     if debug_mode:
         config["n_workers_dataloader"] = 0
         config["gpus"] = False
-        limit_train_batches = 0.1
-        limit_val_batches = 1.
+        limit_train_batches = 0.2
+        limit_val_batches = 0.5
 
     assert config['tag_type'] in ["bio", "biluo"]
 
@@ -67,7 +67,8 @@ def main(
             batch_size=config['batch_size'],
             n_workers=config['n_workers_dataloader'],
             tag_type=config['tag_type'],
-            print_tokens=print_tokens
+            print_tokens=print_tokens,
+            rmls=config["remove_longer_seqs"]
         )
     else:
         to_print = 20 * "=" + " Doing final train with training + validation dataset ".upper() + 20 * "="
@@ -80,8 +81,8 @@ def main(
             n_workers=config['n_workers_dataloader'],
             tag_type=config['tag_type'],
             print_tokens=print_tokens,
-            dataset_name="training + validation"
-
+            dataset_name="training + validation",
+            rmls=config["remove_longer_seqs"]
         )
 
     val_dataloader = get_val_dataloader(
@@ -93,7 +94,8 @@ def main(
         tag_type=config['tag_type'],
         print_tokens=print_tokens,
         tag2id=tag2id,
-        dataset_name="validation"
+        dataset_name="validation",
+        remove_longer_seqs=config["remove_longer_seqs"]
     )
 
     config["scaling_dict"] = scaling_dict
@@ -101,6 +103,8 @@ def main(
     total_training_steps = len(train_dataloader) * config["max_epochs"]
     # ============ 4. Get model =============== #
     BertPKREX.forward = auto_move_data(BertPKREX.forward)  # auto move data to the correct device
+    BertPKREX.predict_entities = auto_move_data(BertPKREX.predict_entities)
+    BertPKREX.predict_relations = auto_move_data(BertPKREX.predict_relations)
     model = BertPKREX(config=config, id2tag=id2tag, n_training_steps=total_training_steps)
 
     # ============ 5. Define trainer =============== #
@@ -115,10 +119,10 @@ def main(
 
     if not config["final_train"]:
 
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='val_pk_value_strict',
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='cval_f1',
                                                            dirpath=os.path.join(config['output_dir'], 'checkpoints'),
                                                            filename=config['run_name'] + '-{epoch:04d}-{'
-                                                                                         'val_pk_value_strict:.2f}',
+                                                                                         'cval_f1:.2f}',
                                                            save_top_k=2,
                                                            mode='max'
                                                            )

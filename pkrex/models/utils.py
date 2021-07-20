@@ -1,3 +1,4 @@
+"""Functions concerning model operations. Tests available at tests/test_model_utils.py"""
 import gc
 import torch
 from typing import Dict, List, Tuple, Any
@@ -5,9 +6,18 @@ from pytorch_lightning.loggers import LightningLoggerBase, TensorBoardLogger
 from tokenizers import Encoding
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-
 from pkrex.annotation_preproc import view_entities_terminal
 import warnings
+
+ACCEPTABLE_ENTITY_COMBINATIONS = [
+    ("PK", "VALUE"), ("PK", "RANGE"), ("VALUE", "PK"), ("RANGE", "PK"),  # C_VAL relations
+    ("VALUE", "VALUE"), ("RANGE", "RANGE"), ("RANGE", "VALUE"), ("VALUE", "RANGE"),  # D_VAL relations
+
+    # RELATED relations
+    ("UNITS", "VALUE"), ("UNITS", "RANGE"), ("VALUE", "UNITS"), ("RANGE", "UNITS"),
+    ("COMPARE", "VALUE"), ("COMPARE", "RANGE"), ("VALUE", "COMPARE"), ("RANGE", "COMPARE")
+
+]
 
 
 def get_f1(p, r):
@@ -38,15 +48,17 @@ def get_unique_spans_from_rels(rels: List[Dict]):
 
 
 def assign_index_to_spans(span_list: List[Dict]) -> List[Dict]:
-    if 'start' in span_list[0]:
-        span_list = sorted(span_list, key=lambda d: (d['start'], d['end'], d['label']))
-    else:
-        span_list = sorted(span_list, key=lambda d: (d['token_start'], d['token_end'], d['label']))
-    out_spans = []
-    for idx, sp in enumerate(span_list):
-        sp['ent_id'] = idx
-        out_spans.append(sp)
-    return out_spans
+    if span_list:
+        if 'start' in span_list[0]:
+            span_list = sorted(span_list, key=lambda d: (d['start'], d['end'], d['label']))
+        else:
+            span_list = sorted(span_list, key=lambda d: (d['token_start'], d['token_end'], d['label']))
+        out_spans = []
+        for idx, sp in enumerate(span_list):
+            sp['ent_id'] = idx
+            out_spans.append(sp)
+        return out_spans
+    return []
 
 
 def align_tokens_and_annotations_bilou(tokenized: Encoding, annotations: List[Dict], example: Dict,
@@ -182,14 +194,14 @@ def bio_to_entity_tokens(inp_bio_seq: List[str]) -> List[Dict]:
     sequence_len = len(inp_bio_seq)
     for start_ent_tok_idx in b_toks:
         entity_type = inp_bio_seq[start_ent_tok_idx].split("-")[1]
-        end_ent_tok_idx = start_ent_tok_idx + 1
+        end_ent_tok_idx = start_ent_tok_idx
         if start_ent_tok_idx + 1 < sequence_len:  # if it's not the last element in the sequence
             for next_token in inp_bio_seq[start_ent_tok_idx + 1:]:
                 if next_token.split("-")[0] == "I" and next_token.split("-")[1] == entity_type:
                     end_ent_tok_idx += 1
                 else:
                     break
-        out_spans.append(dict(token_start=start_ent_tok_idx, token_end=end_ent_tok_idx - 1, label=entity_type))
+        out_spans.append(dict(token_start=start_ent_tok_idx, token_end=end_ent_tok_idx, label=entity_type))
     return out_spans
 
 
@@ -361,17 +373,6 @@ def generate_all_possible_rels(inp_entities: List[Dict]) -> List[Dict[Any, dict]
     return possible_rels
 
 
-ACCEPTABLE_ENTITY_COMBINATIONS = [
-    ("PK", "VALUE"), ("PK", "RANGE"), ("VALUE", "PK"), ("RANGE", "PK"),  # C_VAL relations
-    ("VALUE", "VALUE"), ("RANGE", "RANGE"), ("RANGE", "VALUE"), ("VALUE", "RANGE"),  # D_VAL relations
-
-    # RELATED relations
-    ("UNITS", "VALUE"), ("UNITS", "RANGE"), ("VALUE", "UNITS"), ("RANGE", "UNITS"),
-    ("COMPARE", "VALUE"), ("COMPARE", "RANGE"), ("VALUE", "COMPARE"), ("RANGE", "COMPARE")
-
-]
-
-
 def filter_not_allowed_rels(inp_possible_rels: List[Dict[Any, dict]],
                             allowed_combos=None) -> List[Dict[Any, dict]]:
     """
@@ -390,3 +391,207 @@ def filter_not_allowed_rels(inp_possible_rels: List[Dict[Any, dict]],
             if tmp_combo in allowed_combos:
                 out_possible_relations.append(tmp_rel)
     return out_possible_relations
+
+
+def arrange_relationship(inp_rel: Dict):
+    head_key = 'head'
+    child_key = 'child'
+    if head_key not in inp_rel.keys():
+        assert 'head_span' in inp_rel.keys()
+        head_key = 'head_span'
+    if child_key not in inp_rel.keys():
+        assert 'child_span' in inp_rel.keys()
+        child_key = 'child_span'
+    hs_start = inp_rel[head_key]['token_start']
+    hs_end = inp_rel[head_key]['token_end']
+    cs_start = inp_rel[child_key]['token_start']
+    cs_end = inp_rel[child_key]['token_end']
+    if cs_start > hs_end:
+        right_entity = inp_rel[child_key]
+        left_entity = inp_rel[head_key]
+    else:
+        assert hs_start > cs_end
+        right_entity = inp_rel[head_key]
+        left_entity = inp_rel[child_key]
+    return left_entity, right_entity
+
+
+def get_ctx_token_offsets(inp_rel: Dict) -> Tuple[int, int]:
+    """
+    inp_rel has the form of:
+    example_rel = {"head": {'token_start': 1, 'token_end': 1, 'label': 'VALUE', 'ent_id': 1},
+     "child": {'token_start': 4, 'token_end': 5, 'label': 'UNITS', 'ent_id': 2}}
+     This function returns the index of the end token of the right-hand sided entity and the index of the
+     beginning left-hand sided entity
+     example_return = (1,4)
+    """
+    left_entity, right_entity = arrange_relationship(inp_rel=inp_rel)
+    return left_entity['token_end'], right_entity['token_start']
+
+
+def get_ent_and_ctx_token_offsets(inp_rel: Dict) -> Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]:
+    """
+    Given an input relationship returns a tuple in the form of:
+    (
+        (tok_start,tok_end), # offsets left-hand side entity
+        (tok_start,tok_end), # offsets right-hand side entity
+        (tok_start,tok_end) # offsets context tokens between left-hand side and right-hand side entity
+    )
+    """
+    left_entity, right_entity = arrange_relationship(inp_rel=inp_rel)
+    left_ent_token_offsets = (left_entity['token_start'], left_entity['token_end'] + 1)
+    right_ent_token_offsets = (right_entity['token_start'], right_entity['token_end'] + 1)
+    ctx_token_offsets = (left_ent_token_offsets[1], right_ent_token_offsets[0])
+    return left_ent_token_offsets, right_ent_token_offsets, ctx_token_offsets
+
+
+def simplify_relation(inp_rel: Dict) -> Tuple[Tuple[int, int], Tuple[int, int], str]:
+    """
+    Given an input relation it returns a tuple in the form of
+    (
+    (tok_start,tok_end), # offsets left-hand side entity
+    (tok_start,tok_end), # offsets right-hand side entity
+    relation_label # C_VAL etc...
+    )
+    """
+    left_ent, right_ent = arrange_relationship(inp_rel=inp_rel)
+    assert left_ent['token_start'] < right_ent['token_start']
+    out_tuple = ((left_ent['token_start'], left_ent['token_end'] + 1),
+                 (right_ent['token_start'], right_ent['token_end'] + 1),
+                 inp_rel['label'])
+
+    return out_tuple
+
+
+def associate_rel_tuples_with_labels(inp_rel_labels: List[Dict], inp_rel_tuples: List[List[int]]):
+    out_labels, i = [], 0
+    for rel_indices in inp_rel_tuples:
+        relation_label = "NO_RELATION"
+        for annotated_rel in inp_rel_labels:
+            left_ent, right_ent = arrange_relationship(inp_rel=annotated_rel)
+            if rel_indices[0] == left_ent['ent_id'] and rel_indices[1] == right_ent['ent_id']:
+                relation_label = annotated_rel['label']
+                i += 1
+        out_labels.append(relation_label)
+
+    assert len(out_labels) == len(inp_rel_tuples)
+    assert i == len(inp_rel_labels)
+    return out_labels
+
+
+def associate_triplets_with_rels(inp_rel_labels: List[Dict], inp_triplets: List[Tuple[Tuple[int, int],
+                                                                                      Tuple[int, int],
+                                                                                      Tuple[int, int]]]
+                                 ):
+    simplified_rels = [simplify_relation(inp_rel=r) for r in inp_rel_labels]
+    out_labels = []
+    i = 0
+    for triplet in inp_triplets:
+        offsets1 = triplet[0]
+        offsets2 = triplet[1]
+        relation_label = "NO_RELATION"
+        for annotated_rel in simplified_rels:
+            if offsets1 == annotated_rel[0] and offsets2 == annotated_rel[1]:
+                relation_label = annotated_rel[2]
+                i += 1
+        out_labels.append(relation_label)
+
+    assert len(out_labels) == len(inp_triplets)
+    assert i == len(inp_rel_labels)  # asserts the number of assigned true relations is the same as in the input
+    return out_labels
+
+
+def dynamic_index_maxpool(sentence_rep_batch: torch.Tensor, indices_tensor: torch.Tensor) -> torch.Tensor:
+    """
+    This function max pools entities in token_start, token_end from a specific sentence
+    @param sentence_rep_batch: Batch of sentences composed by token representations.
+        The shape is: batch_size * max_length * token_embedding_size
+    @param indices_tensor: Tensor with indices of all entities expressed as [token_start,token_end+1]
+        The shape is: batch_size * max_n_entities * 2
+    @return Tensor of the resulting tokens max pooled.
+        The shape is: batch_size * max_n_entities * token_embedding_size
+    """
+    bs = sentence_rep_batch.shape[0]
+    max_len = sentence_rep_batch.shape[1]
+    max_n_entities = indices_tensor.shape[1]
+    tok_emb_size = sentence_rep_batch.shape[2]
+    entity_masks = entity_indices_to_mask(inp_indices=indices_tensor,
+                                          batch_size=bs,
+                                          max_n_entities=max_n_entities,
+                                          max_len=max_len)  # should be boolean and have a shape of
+
+    entity_spans_pool = dpooler(entity_masks=entity_masks, sentence_rep_batch=sentence_rep_batch)
+    assert entity_spans_pool.shape == torch.Size([bs, max_n_entities, tok_emb_size])
+    # batch_size * max_n_entities * max_len
+    return entity_spans_pool
+
+
+def dpooler(entity_masks, sentence_rep_batch):
+    m = (entity_masks.unsqueeze(-1) == 0).float() * (-1e30)
+    entity_spans_pool = m + sentence_rep_batch.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
+    entity_spans_pool = entity_spans_pool.max(dim=2)[0]
+    return entity_spans_pool
+
+
+def entity_indices_to_mask(inp_indices: torch.Tensor, batch_size: int, max_n_entities: int, max_len: int):
+    assert len(inp_indices.shape) == 3
+    out_tensor = []
+    for batch_indices in inp_indices:
+        batch_tensor = []
+        for entity_offsets in batch_indices:
+            assert entity_offsets.shape == torch.Size([2])
+
+            start = entity_offsets[0].item()
+            end = entity_offsets[1].item()
+            if start != end:
+                ent_tensor = [True if i in range(start, end) else False for i in range(0, max_len)]
+            else:
+                ent_tensor = max_len * [False]
+            batch_tensor.append(ent_tensor)
+        out_tensor.append(batch_tensor)
+    out_tensor = torch.Tensor(out_tensor).bool()
+    assert out_tensor.shape == torch.Size([batch_size, max_n_entities, max_len])
+    return out_tensor
+
+
+def possible_rels_to_entity_ids_format(inp_entities, inp_rels):
+    """
+    Makes tuples of relationships between entities in entity list according to their entity id
+    """
+    ent_indices = [x['ent_id'] for x in inp_entities]
+    check_list_is_sorted(inp_list=ent_indices)
+    out_rels = []
+    for rel in inp_rels:
+        left_entity, right_entity = arrange_relationship(inp_rel=rel)
+        out_rels.append([left_entity['ent_id'], right_entity['ent_id']])
+    return out_rels
+
+
+def check_list_is_sorted(inp_list: List[int]):
+    assert all(inp_list[i] <= inp_list[i + 1] for i in range(len(inp_list) - 1))
+
+
+def get_entities_and_ctx_masks(inp_entities, inp_rels, max_len) -> Tuple[List[List[bool]], List[List[bool]], List[int]]:
+    """
+    Returns boolean list corresponding to the entities in the batch and boolean list
+    corresponding to the context token in each relation and context token lengths
+    """
+    ent_masks, ctx_masks, ctx_lengths = [], [], []
+    for ent in inp_entities:
+        start_tok_offset = ent['token_start']
+        end_tok_offset = ent['token_end'] + 1
+        assert start_tok_offset < end_tok_offset
+        ent_mask = [True if i in range(start_tok_offset, end_tok_offset) else False for i in range(0, max_len)]
+        ent_masks.append(ent_mask)
+
+    for r in inp_rels:
+        left_entity, right_entity = arrange_relationship(inp_rel=r)
+        left_ent_token_offsets = (left_entity['token_start'], left_entity['token_end'] + 1)
+        right_ent_token_offsets = (right_entity['token_start'], right_entity['token_end'] + 1)
+        ctx_token_offsets = (left_ent_token_offsets[1], right_ent_token_offsets[0])
+        assert ctx_token_offsets[0] <= ctx_token_offsets[1]
+        ctx_lengths.append(ctx_token_offsets[1] - ctx_token_offsets[0])
+        ctx_mask = [True if i in range(ctx_token_offsets[0], ctx_token_offsets[1]) else False
+                    for i in range(0, max_len)]
+        ctx_masks.append(ctx_mask)
+    return ent_masks, ctx_masks, ctx_lengths

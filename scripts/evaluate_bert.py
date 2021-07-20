@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import typer
 from transformers import BertTokenizerFast
-from pkrex.models.bertpkrex import load_pretrained_model
+from pkrex.models.old_bert_ner import load_pretrained_model
 from pkrex.annotation_preproc import view_all_entities_terminal, clean_instance_span
 from pkrex.utils import read_jsonl, print_ner_scores
 
@@ -12,15 +12,15 @@ from nervaluate import Evaluator
 
 def main(
         model_checkpoint: Path = typer.Option(
-            default="results/checkpoints/first-train-all-128-epoch=0004-val_pk_value_strict=0.87.ckpt",
+            default="results/checkpoints/first-training-all-128-2-epoch=0007-val_pk_value_strict=0.91.ckpt",
             help="Path to the input model"),
 
-        predict_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/test-all-ready-fixed-5.jsonl",
+        predict_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/test-all-ready-fixed-6.jsonl",
                                                help="Path to the jsonl file of the test/evaluation set"),
 
         display_errors: bool = typer.Option(default=True, help="Whether to display sentences with errors"),
 
-        display_all: bool = typer.Option(default=False, help="Whether to display all sentences "),
+        display_all: bool = typer.Option(default=True, help="Whether to display all sentences "),
 
         batch_size: int = typer.Option(default=256, help="Batch size"),
 

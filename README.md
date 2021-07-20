@@ -147,7 +147,7 @@ https://stackoverflow.com/questions/31965558/how-to-display-a-variable-in-html
 ```` shell
 python scripts/train_pkrex.py \
    --training-file-path data/pubmedbert_tokenized/train-all-reviewed-clean-4.jsonl \
-   --val-file-path data/pubmedbert_tokenized/test-all-ready-fixed-5.jsonl \
+   --val-file-path data/pubmedbert_tokenized/test-all-ready-fixed-6.jsonl \
    --output-dir results \
    --model-config-file configs/config-biobert.json
 ````
@@ -173,3 +173,11 @@ Missing 1500-1800
 
 
 
+### Functions missing
+
+1) Prediction step
+
+#### Analyses to do
+
+1) Pre-compute negatives
+2) Compute negatives on-the-fly
