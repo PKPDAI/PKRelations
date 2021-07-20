@@ -49,7 +49,7 @@ EXPECTED_POOLING = torch.Tensor(
         [
             [0.3311, 0.3916, 0.8462, 0.6619, 0.1425],
             [0.6406, 0.6548, 0.7640, 0.5210, 0.8913],
-            [-1e30, -1e30, -1e30, -1e30, -1e30]
+            [float('-inf'),  float('-inf'),  float('-inf'),  float('-inf'),  float('-inf')]
         ]
     ]
 )
@@ -60,6 +60,7 @@ EXPECTED_POOLING = torch.Tensor(
 def test_dynamic_index_maxpool():
     result = dynamic_index_maxpool(sentence_rep_batch=EXAMPLE_BATCH_SENTENCE_REP,
                                    indices_tensor=EXAMPLE_BATCH_ENTITY_OFFSETS)
+
     assert torch.all(torch.eq(result, EXPECTED_POOLING))
 
 

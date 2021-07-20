@@ -203,7 +203,8 @@ class BertPKREX(pl.LightningModule):
 
         inp_labels = [ID2REX[x] for x in inp_labels]
         inp_predictions = [ID2REX[x] for x in inp_predictions]
-        c_report = classification_report(y_true=inp_labels, y_pred=inp_predictions, output_dict=True)
+        c_report = classification_report(y_true=inp_labels, y_pred=inp_predictions, output_dict=True,
+                                         zero_division=0)
         return c_report
 
     def validation_epoch_end(self, outputs):
@@ -279,16 +280,20 @@ class BertPKREX(pl.LightningModule):
                                        correct_rel_tuples, predicted_rel_tuples, correct_rel_labels):
 
         extra_labels, labels_to_predict = [], []
-
-        tmp_masks = ~torch.all(torch.eq(correct_rel_tuples, torch.tensor([0, 0], dtype=torch.int64).to(self.device)),
-                               dim=1)
+        tmp_masks = None
+        if correct_rel_tuples.shape[0] != 0:
+            # correct_rel_tuples[1].nelement() != 0:
+            tmp_masks = ~torch.all(
+                torch.eq(correct_rel_tuples, torch.tensor([0, 0], dtype=torch.int64).to(self.device)), dim=1)
+            if sum(tmp_masks) == 0:
+                tmp_masks = None
         if len(predicted_rel_tuples) == 0:
-            if sum(tmp_masks) != 0:
+            if tmp_masks is not None:
                 # Here we don't have pred entities but we have ground entities
                 extra_labels = correct_rel_labels[tmp_masks].tolist()
             return extra_labels, labels_to_predict  # we also jump here when we don't have either of them
         else:
-            if sum(tmp_masks) == 0:
+            if tmp_masks is None or sum(tmp_masks) == 0:
                 labels_to_predict = [REX2ID["NO_RELATION"] for _ in predicted_rel_tuples]
                 # Here we have pred entities but not ground truth
                 return extra_labels, labels_to_predict
@@ -439,14 +444,20 @@ def get_micro_macro_f1s(inp_results_dict: Dict) -> Dict:
     # Macro avg
     macro_strict_f1s = [v['strict']['f1'] for v in inp_results_dict.values() if v['support'] > 0]
     macro_partial_f1s = [v['partial']['f1'] for v in inp_results_dict.values() if v['support'] > 0]
-    out_results['macro']['strict'] = sum(macro_strict_f1s) / len(macro_strict_f1s)
-    out_results['macro']['partial'] = sum(macro_partial_f1s) / len(macro_partial_f1s)
+    out_results['macro']['strict'] = 0.
+    out_results['macro']['partial'] = 0.
+    if macro_strict_f1s:
+        out_results['macro']['strict'] = sum(macro_strict_f1s) / len(macro_strict_f1s)
+    if macro_partial_f1s:
+        out_results['macro']['partial'] = sum(macro_partial_f1s) / len(macro_partial_f1s)
     # Micro avg
-    total_support = sum([x['support'] for x in inp_results_dict.values()])
-    micro_strict_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()
-                           if v['strict']['f1'] is not None])
-    micro_partial_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()
-                            if v['strict']['f1'] is not None])
+    micro_strict_f1, micro_partial_f1 = 0., 0.
+    if inp_results_dict.values() and sum([x['support'] for x in inp_results_dict.values()]):
+        total_support = sum([x['support'] for x in inp_results_dict.values()])
+        micro_strict_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()
+                               if v['strict']['f1'] is not None])
+        micro_partial_f1 = sum([v['strict']['f1'] * (v['support'] / total_support) for v in inp_results_dict.values()
+                                if v['strict']['f1'] is not None])
     out_results['micro']['strict'] = micro_strict_f1
     out_results['micro']['partial'] = micro_partial_f1
     return out_results

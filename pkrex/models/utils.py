@@ -527,7 +527,8 @@ def dynamic_index_maxpool(sentence_rep_batch: torch.Tensor, indices_tensor: torc
 
 
 def dpooler(entity_masks, sentence_rep_batch):
-    m = (entity_masks.unsqueeze(-1) == 0).float() * (-1e30)
+    m = (entity_masks.unsqueeze(-1) == 0).float()  # * (-1e30)  # float('-inf')  # (-1e30)
+    m[m == 1] = float('-inf')
     entity_spans_pool = m + sentence_rep_batch.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
     entity_spans_pool = entity_spans_pool.max(dim=2)[0]
     return entity_spans_pool

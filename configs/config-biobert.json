@@ -3,7 +3,7 @@
   "base_model": "dmis-lab/biobert-v1.1",
 
   "n_workers_dataloader": 12,
-  "gpus": false,
+  "gpus": true,
   "seed": 1,
 
   "learning_rate": 2e-5,
