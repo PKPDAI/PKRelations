@@ -1,0 +1,1 @@
+prodigy rel.manual rel_trials3233 en_core_sci_lg trial.jsonl --label C_VAL,D_VAL,RELATED,DOSAGE,C_MIN,C_MAX,D_MIN,D_MAX,COMPLEMENT --span-label UNITS,COMPLEMENT,COMPARATIVE,TYPE_MEAS,VALUE,PK,DISEASES,SPECIES,CHEMICAL --add-ents --wrap
