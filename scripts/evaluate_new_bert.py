@@ -3,9 +3,10 @@ from pathlib import Path
 from typing import List, Dict
 
 import typer
+from sklearn.metrics import classification_report
 from transformers import BertTokenizerFast
 from pkrex.models.bertpkrex import load_pretrained_model, get_avg_ner_metrics
-from pkrex.annotation_preproc import view_all_entities_terminal, clean_instance_span
+from pkrex.annotation_preproc import view_all_entities_terminal, clean_instance_span, visualize_relations_brat
 from pkrex.utils import read_jsonl, print_ner_scores
 
 from pkrex.models.utils import predict_pl_bert_rex, arrange_relationship
@@ -35,13 +36,13 @@ def main(
 
         display_all: bool = typer.Option(default=False, help="Whether to display all sentences "),
 
-        batch_size: int = typer.Option(default=4, help="Batch size"),
+        batch_size: int = typer.Option(default=8, help="Batch size"),
 
         gpu: bool = typer.Option(default=True, help="Whether to use GPU for inference"),
 
         n_workers: int = typer.Option(default=12, help="Number of workers to use for the dataloader"),
 
-        debug: float = typer.Option(default=True)
+        debug: float = typer.Option(default=False)
 
 ):
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -97,15 +98,51 @@ def main(
     pred_brat_annot = []
     true_brat_annot = []
     for pred_relations, true_relations, original_annot in zip(pred_rex_ready, true_rex_ready, predict_sentences):
-        # prediction
         pred_brat_annot.append(get_ready_brat(original_annot=original_annot, pred_relations=pred_relations))
         true_brat_annot.append(get_ready_brat(original_annot=original_annot, pred_relations=true_relations))
-    a=1
+    visualize_relations_brat(inp_annotations=pred_brat_annot, file_path="brat/rex_pred.html")
+    visualize_relations_brat(inp_annotations=true_brat_annot, file_path="brat/rex_true.html")
+    # 6.4 Compute F1 scores
+    all_rex_labels, all_rex_predictions = [], []
+    pred_rex_ready = [encode_rels(x) for x in pred_rex_ready]
+    true_rex_ready = [encode_rels(x) for x in true_rex_ready]
+    for sample_pred, sample_true in zip(pred_rex_ready, true_rex_ready):
+        tmp_pred_labels = []
+        tmp_true_labels = []
+        if sample_pred:
+            # predicted relations
+            if sample_true:
+                # predicted and ground truth
+                for predicted_rel_id in sample_pred.keys():
+                    if predicted_rel_id in sample_true.keys():
+                        tmp_true_labels.append(sample_true[predicted_rel_id])
+                        tmp_pred_labels.append(sample_pred[predicted_rel_id])
+                    else:
+                        tmp_pred_labels.append(sample_pred[predicted_rel_id])
+                        tmp_true_labels.append("NO_RELATION")
+                # catch missing
+                for annotated_rel_id in sample_true.keys():
+                    if annotated_rel_id not in sample_pred.keys():
+                        tmp_true_labels.append(sample_true[annotated_rel_id])
+                        tmp_pred_labels.append("NO_RELATION")
+            else:
+                # predicted but not ground truth
+                tmp_pred_labels = list(sample_pred.values())
+                tmp_true_labels = ["NO_RELATION" for _ in tmp_pred_labels]
 
-    # visualize_relations_brat(inp_annotations=output_dataset, file_path="brat/rel_brat_template.html")
+        else:
+            # no predicted relations
+            if sample_true:
+                # no predicted but ground truth
+                tmp_true_labels = list(sample_true.values())
+                tmp_pred_labels = ["NO_RELATION" for _ in tmp_true_labels]
 
-    # 2. Get metrics
-    # extra_labels
+        all_rex_predictions += tmp_pred_labels
+        all_rex_labels += tmp_true_labels
+    clas_report = classification_report(y_true=all_rex_labels, y_pred=all_rex_predictions,
+                                        zero_division=0)
+    print(clas_report)
+
 
 
 def get_ready_brat(original_annot, pred_relations):
@@ -164,6 +201,13 @@ def edit_true_rex(inp_true_rex):
 
 def keep_only_rel(inp_ent):
     return dict(start=inp_ent['start'], end=inp_ent['end'], label=inp_ent['label'])
+
+def encode_rels(inp_rels):
+    out_encoded = dict()
+    for rel in inp_rels:
+        rel_identifier = int(str(rel['child_span']['end']) + str(rel['child_span']['start']) + str(rel['head_span']['end']) + str(rel['head_span']['start']))
+        out_encoded[rel_identifier] = rel['label']
+    return out_encoded
 
 
 if __name__ == "__main__":
