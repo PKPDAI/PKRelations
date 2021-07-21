@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from pkrex.annotation_preproc import view_entities_terminal
 import warnings
+from pkrex.models.sampling import collate_fn_padding
 
 ACCEPTABLE_ENTITY_COMBINATIONS = [
     ("PK", "VALUE"), ("PK", "RANGE"), ("VALUE", "PK"), ("RANGE", "PK"),  # C_VAL relations
@@ -18,6 +19,9 @@ ACCEPTABLE_ENTITY_COMBINATIONS = [
     ("COMPARE", "VALUE"), ("COMPARE", "RANGE"), ("VALUE", "COMPARE"), ("RANGE", "COMPARE")
 
 ]
+
+REX2ID = dict(NO_RELATION=0, C_VAL=1, D_VAL=2, RELATED=3)
+ID2REX = {v: k for k, v in REX2ID.items()}
 
 
 def get_f1(p, r):
@@ -246,6 +250,200 @@ def get_tensorboard_logger(log_dir: str, run_name: str) -> LightningLoggerBase:
     return TensorBoardLogger(save_dir=log_dir, name="tensorboard-logs-{}".format(run_name))
 
 
+def add_character_offsets(offset_mappings, entity_tokens, tags_per_sentence):
+    batch_ent_offsets = []
+    batch_iobs = []
+    for offsets, entities, tmp_iobs in zip(offset_mappings, entity_tokens, tags_per_sentence):
+        tmp_instance_spans = []
+        for entity in entities:
+            entity["start"] = int(offsets[entity["token_start"]][0])
+            entity["end"] = int(offsets[entity["token_end"]][1])
+            tmp_instance_spans.append(entity)
+        batch_ent_offsets.append(tmp_instance_spans)
+        batch_iobs.append(tmp_iobs)
+    return batch_ent_offsets, batch_iobs
+
+
+def get_tags_per_sentence(batch_logits, inp_att_masks, id2tag):
+    ner_predictions = batch_logits.argmax(dim=2)
+    tags_per_sentence = [
+        [id2tag[tok_pred] if tok_mask != 0 else 'O' for tok_pred, tok_mask in zip(sentence_pred,
+                                                                                  sentence_masks)]
+        for sentence_pred, sentence_masks in zip(ner_predictions.tolist(), inp_att_masks.tolist())
+    ]
+    return tags_per_sentence
+
+
+def rex_pred_checks(original_tuples, original_token_masks, rex_preds_flat):
+    assert len(original_tuples) == len(original_token_masks)
+    flat_original_tuples = [ent_pair for tup_list in original_tuples if tup_list for ent_pair in tup_list]
+    assert len(flat_original_tuples) == len(rex_preds_flat)
+
+
+def predict_pl_bert_rex(inp_texts, inp_model, inp_tokenizer, batch_size, n_workers):
+    """
+    Return output for ner and rex in the same way as prodigy annotations
+    """
+    # Tokenize and construct dataloader
+    encodings = inp_tokenizer(inp_texts, padding=True, truncation=True, max_length=inp_model.seq_len,
+                              return_offsets_mapping=True, return_overflowing_tokens=False)
+    predict_dataset = PKDatasetInference(encodings=encodings)
+    predict_loader = DataLoader(predict_dataset, batch_size=batch_size, num_workers=n_workers, pin_memory=True)
+
+    # Put model in evaluation mode and initialise lists for storing predictions
+    inp_model.eval()
+    all_ent_offsets = []
+    all_rex_predictions = []
+    for idx, batch in tqdm(enumerate(predict_loader)):
+        with torch.no_grad():
+            # =================== 1. Pass through BERT ===============================
+            h = inp_model.bert(batch['input_ids'], attention_mask=batch['attention_mask'])[0]
+            # =================== 2. Predict entities ===============================
+            batch_logits = inp_model.predict_entities(sequence_bert_output=h)
+            # 2.1 Get IOBs
+            tags_per_sentence = get_tags_per_sentence(batch_logits=batch_logits,
+                                                      inp_att_masks=batch['attention_mask'],
+                                                      id2tag=inp_model.id2tag)
+            # 2.2 Get token offsets Token offsets
+            entity_tokens = [bio_to_entity_tokens(tag_prediction) for tag_prediction in tags_per_sentence]
+            assert len(tags_per_sentence) == len(entity_tokens) == len(batch['input_ids'])
+            # 2.3 Add character offsets
+            batch_ent_offsets, batch_iobs = add_character_offsets(offset_mappings=batch["offset_mapping"],
+                                                                  entity_tokens=entity_tokens,
+                                                                  tags_per_sentence=tags_per_sentence)
+            all_ent_offsets += batch_ent_offsets
+
+            # =================== 3. Predict relations ===============================
+            # 2.1 Construct samples for batch
+            rex_batch_no_pad = [make_rex_pred_batch_sample(inp_iobs=tmp_iobs) for tmp_iobs in batch_iobs]
+            # 2.2 Pad batch and get masks (tuples that are not entity candidates ([0,0])
+            pred_batch = collate_fn_padding(batch=rex_batch_no_pad)
+            rex_masks = inp_model.get_rex_masks(inp_rel_tuples=pred_batch['rel_tuples'])
+            # 2.3 Make predictions (this function already applies rex_masks to filter out irrelevant tuples)
+            rex_preds_flat = []
+            if rex_masks is not None and sum(rex_masks) != 0:
+                rex_logits = inp_model.predict_relations(inp_sequence_rep=h, inp_ent_masks=pred_batch['entity_masks'],
+                                                         inp_rex_masks=rex_masks, inp_ctx_masks=pred_batch['ctx_mask'],
+                                                         inp_rel_tuples=pred_batch['rel_tuples'],
+                                                         inp_ctx_width=pred_batch['ctx_len'])
+
+                rex_preds_flat = [ID2REX[x] for x in rex_logits.argmax(dim=1).tolist()]
+
+            # 2.4 Now Map predictions to the way in which prodigy labels are provided (character label per
+            # pairs of entities)
+            original_tuples = [x['rel_tuples'].tolist() for x in rex_batch_no_pad]
+            original_token_masks = [x['entity_masks'] for x in rex_batch_no_pad]
+            rex_pred_checks(original_tuples=original_tuples, original_token_masks=original_token_masks,
+                            rex_preds_flat=rex_preds_flat)
+
+            rex_pred_batch_ready = map_bert_pred_to_prodigy(rex_preds_flat=rex_preds_flat,
+                                                            original_tuples=original_tuples,
+                                                            original_token_masks=original_token_masks,
+                                                            batch_ent_offsets=batch_ent_offsets)
+
+            all_rex_predictions += rex_pred_batch_ready
+
+    return all_ent_offsets, all_rex_predictions
+
+
+def map_bert_pred_to_prodigy(rex_preds_flat, original_tuples, original_token_masks, batch_ent_offsets):
+    i = 0
+    rex_pred_batch = []
+    for sample_cand_ents, samle_tok_masks, sample_ent_offsets in zip(original_tuples, original_token_masks,
+                                                                     batch_ent_offsets):
+        sample_rex_labels = []
+        if sample_cand_ents:
+            for rel_cand_tuple in sample_cand_ents:
+                label = rex_preds_flat[i]
+                ent1_tok_idxs = samle_tok_masks[rel_cand_tuple[0]].nonzero()
+                ent2_tok_idxs = samle_tok_masks[rel_cand_tuple[1]].nonzero()
+                ent1_tok_offsets = (ent1_tok_idxs.min().item(), ent1_tok_idxs.max().item())
+                ent2_tok_offsets = (ent2_tok_idxs.min().item(), ent2_tok_idxs.max().item())
+                ent1_ready = find_original_entity(inp_tok_offsets=ent1_tok_offsets,
+                                                  all_entites_offsets=sample_ent_offsets)
+                ent2_ready = find_original_entity(inp_tok_offsets=ent2_tok_offsets,
+                                                  all_entites_offsets=sample_ent_offsets)
+                assert ent1_ready and ent2_ready
+                tmp_pred_rel = dict(left=ent1_ready, right=ent2_ready, label=label)
+                sample_rex_labels.append(tmp_pred_rel)
+                i += 1
+        rex_pred_batch.append(sample_rex_labels)
+    return rex_pred_batch
+
+
+def find_original_entity(inp_tok_offsets: Tuple[int, int], all_entites_offsets: List[Dict]):
+    for cand_ent in all_entites_offsets:
+        if cand_ent['token_start'] == inp_tok_offsets[0] and cand_ent['token_end'] == inp_tok_offsets[1]:
+            return cand_ent
+
+
+def make_rex_pred_batch_sample(inp_iobs):
+    entity_tokens = assign_index_to_spans(bio_to_entity_tokens(inp_bio_seq=inp_iobs))
+    candidate_rels = generate_all_possible_rels(inp_entities=entity_tokens)
+    candidate_rels = filter_not_allowed_rels(inp_possible_rels=candidate_rels)
+    candidate_rels_ent_ids = possible_rels_to_entity_ids_format(inp_entities=entity_tokens,
+                                                                inp_rels=candidate_rels)
+    pred_ent_masks, pred_ctx_masks, pred_ctx_lengths = get_entities_and_ctx_masks(inp_entities=entity_tokens,
+                                                                                  inp_rels=candidate_rels,
+                                                                                  max_len=len(inp_iobs))
+    tmp_batch_sample = dict(
+        entity_masks=torch.tensor(pred_ent_masks),
+        rel_tuples=torch.tensor(candidate_rels_ent_ids),
+        ctx_mask=torch.tensor(pred_ctx_masks),
+        ctx_len=torch.tensor(pred_ctx_lengths)
+    )
+    return tmp_batch_sample
+
+
+def create_pred_rex_loader_no_labels(inp_iobs, bs):
+    dataset_samples = []
+    for iobs in inp_iobs:
+        entity_tokens = assign_index_to_spans(bio_to_entity_tokens(inp_bio_seq=iobs))
+        candidate_rels = generate_all_possible_rels(inp_entities=entity_tokens)
+        candidate_rels = filter_not_allowed_rels(inp_possible_rels=candidate_rels)
+        candidate_rels_ent_ids = possible_rels_to_entity_ids_format(inp_entities=entity_tokens,
+                                                                    inp_rels=candidate_rels)
+        pred_ent_masks, pred_ctx_masks, pred_ctx_lengths = get_entities_and_ctx_masks(inp_entities=entity_tokens,
+                                                                                      inp_rels=candidate_rels,
+                                                                                      max_len=len(inp_iobs))
+        tmp_batch_sample = dict(
+            entity_masks=torch.tensor(pred_ent_masks),
+            rel_tuples=torch.tensor(candidate_rels_ent_ids),
+            ctx_mask=torch.tensor(pred_ctx_masks),
+            ctx_len=torch.tensor(pred_ctx_lengths)
+        )
+        dataset_samples.append(tmp_batch_sample)
+
+    rex_datset = REXInferenceDataset(dataset_samples=dataset_samples)
+    rex_loader = DataLoader(rex_datset, batch_size=bs, num_workers=12, collate_fn=collate_fn_padding, pin_memory=True)
+    return rex_loader
+
+
+class REXInferenceDataset(Dataset):
+    def __init__(self, dataset_samples: List[Dict[str, torch.Tensor]]):
+        self.samples = dataset_samples
+
+    def __getitem__(self, idx):
+        return self.samples[idx]
+
+
+def arrange_from_pl_bert_ner(inp_pred_form_pl_ber_ner, seq_len):
+    out_iob = []
+    out_ents = []
+    for iob_pred in inp_pred_form_pl_ber_ner:
+        tmp_iob = ['O'] * seq_len
+        tmp_ents = []
+        if iob_pred:
+            tmp_iob = iob_pred[0]['tags']
+            for ent in iob_pred:
+                tmp_ents.append(dict(token_start=ent['token_start'], token_end=ent['token_end'],
+                                     label=ent['label'], start=ent['start'], end=ent['end'])
+                                )
+        out_iob.append(tmp_iob)
+        out_ents.append(tmp_ents)
+    return out_iob, out_ents
+
+
 def predict_pl_bert_ner(inp_texts, inp_model, inp_tokenizer, batch_size, n_workers):
     encodings = inp_tokenizer(inp_texts, padding=True, truncation=True, max_length=inp_model.seq_len,
                               return_offsets_mapping=True, return_overflowing_tokens=True)
@@ -258,8 +456,12 @@ def predict_pl_bert_ner(inp_texts, inp_model, inp_tokenizer, batch_size, n_worke
 
     for idx, batch in tqdm(enumerate(predict_loader)):
         with torch.no_grad():
-            batch_logits = inp_model(input_ids=batch['input_ids'],
-                                     attention_masks=batch['attention_mask']).to('cpu')
+            # if is_rex: # TODO: adapt for old bert if needed
+            h = inp_model.bert(batch['input_ids'], attention_mask=batch['attention_mask'])[0]
+            batch_logits = inp_model.predict_entities(sequence_bert_output=h)
+            # else:
+            #    batch_logits = inp_model(input_ids=batch['input_ids'],
+            #                             attention_masks=batch['attention_mask']).to('cpu')
 
             batch_predicted_entities = predict_bio_tags(model_logits=batch_logits, inp_batch=batch,
                                                         id2tag=inp_model.id2tag)

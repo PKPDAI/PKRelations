@@ -39,6 +39,7 @@ def main(
         config["gpus"] = False
         limit_train_batches = 0.2
         limit_val_batches = 0.5
+    print(f"Debug mode is {str(debug_mode)}")
 
     assert config['tag_type'] in ["bio", "biluo"]
 

@@ -470,7 +470,8 @@ def print_ner_scores(inp_dict: Dict, is_spacy: bool):
             print(f" F1:\t\t {f1}%")
     else:
         for ent_type in inp_dict.keys():
-            print(f"====== Stats for entity {ent_type} ======")
+            support = inp_dict[ent_type]['strict']['possible']
+            print(f"====== Stats for entity {ent_type} (support={support})======")
             for metric_type in inp_dict[ent_type].keys():
                 if metric_type in ['partial', 'strict']:
                     print(f" === {metric_type} match: === ")
