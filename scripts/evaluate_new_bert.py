@@ -26,17 +26,17 @@ def compute_micro_macro(inp_res, inp_types):
 
 def main(
         model_checkpoint: Path = typer.Option(
-            default="results/checkpoints/first-version-rex-all-128-epoch=0012-cval_f1=0.84.ckpt",
+            default="results/checkpoints/second-version-rex-all-128-test-epoch=0013-cval_f1=0.79.ckpt",
             help="Path to the input model"),
 
-        predict_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/test-all-ready-fixed-6.jsonl",
+        predict_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/train-all-reviewed.jsonl",
                                                help="Path to the jsonl file of the test/evaluation set"),
 
-        display_errors: bool = typer.Option(default=False, help="Whether to display sentences with errors"),
+        display_errors: bool = typer.Option(default=True, help="Whether to display sentences with errors"),
 
         display_all: bool = typer.Option(default=False, help="Whether to display all sentences "),
 
-        batch_size: int = typer.Option(default=8, help="Batch size"),
+        batch_size: int = typer.Option(default=16, help="Batch size"),
 
         gpu: bool = typer.Option(default=True, help="Whether to use GPU for inference"),
 
@@ -144,7 +144,6 @@ def main(
     print(clas_report)
 
 
-
 def get_ready_brat(original_annot, pred_relations):
     out_pr_rex = dict(text=original_annot['text'], metadata=original_annot['metadata'])
     pred_relations = [rel for rel in pred_relations if rel['label'] != "NO_RELATION"]
@@ -202,10 +201,13 @@ def edit_true_rex(inp_true_rex):
 def keep_only_rel(inp_ent):
     return dict(start=inp_ent['start'], end=inp_ent['end'], label=inp_ent['label'])
 
+
 def encode_rels(inp_rels):
     out_encoded = dict()
     for rel in inp_rels:
-        rel_identifier = int(str(rel['child_span']['end']) + str(rel['child_span']['start']) + str(rel['head_span']['end']) + str(rel['head_span']['start']))
+        rel_identifier = int(
+            str(rel['child_span']['end']) + str(rel['child_span']['start']) + str(rel['head_span']['end']) + str(
+                rel['head_span']['start']))
         out_encoded[rel_identifier] = rel['label']
     return out_encoded
 

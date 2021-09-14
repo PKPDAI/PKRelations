@@ -46,11 +46,11 @@ def replace_conflicting_tokens(inp_annotation):
 
 
 def main(
-        input_file_path: Path = typer.Option(default="data/annotations/P1/preprocessed/test-all-ready-fixed-6.jsonl",
+        input_file_path: Path = typer.Option(default="data/annotations/P1/ready/test-all-reviewed.jsonl",
                                              help="File that we want to preprocess"),
 
         output_file_path: Path = typer.Option(
-            default="data/annotations/P1/ready/test-all-ready-fixed-6.jsonl",
+            default="data/annotations/P1/ready/test-all-reviewed-2.jsonl",
             help="Path to the output file"),
 
         remove_ents=typer.Option(default=["TYPE_MEAS"],

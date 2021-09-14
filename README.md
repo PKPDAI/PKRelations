@@ -146,8 +146,8 @@ https://stackoverflow.com/questions/31965558/how-to-display-a-variable-in-html
 
 ```` shell
 python scripts/train_pkrex.py \
-   --training-file-path data/pubmedbert_tokenized/train-all-reviewed-clean-4.jsonl \
-   --val-file-path data/pubmedbert_tokenized/test-all-ready-fixed-6.jsonl \
+   --training-file-path data/pubmedbert_tokenized/train-all-reviewed.jsonl \
+   --val-file-path data/pubmedbert_tokenized/test-all-reviewed.jsonl \
    --output-dir results \
    --model-config-file configs/config-biobert.json
 ````
@@ -181,3 +181,113 @@ Missing 1500-1800
 
 1) Pre-compute negatives
 2) Compute negatives on-the-fly
+
+#### Correct the following examples training set:
+
+-1795520872
+-784326854
+-50538781 # range
+-2034452386 # fractional insulin half-life
+21173666
+538793189 # is not a deviation
+-526810301 # pfs
+835803611 clcr nothing
+-1141047764 # auc of change
+-1342741213 # than remove
+-182403480 # apparent median clearance
+1489447781 # unbound
+1847590831 ratio
+-1244967174 Cmin
+-1345379501 kp hiher
+176519790 # three to five days
+1118903905 total body water
+-271770009 # terminal half-life,
+-674663106
+1366463053
+-76230883
+1116634145 circulation half-life
+1788031430 # F
+-696548362 # availability
+-754656065 # clearance of plasma
+504142560
+1140028784 # metabolic clearance
+594490673
+1451306311 # less
+1271277114 # bone half-life
+644898881 # biological
+-596274663 # less
+137325822
+2119107551
+-1602320468 # weird range
+-448670654 # initial
+-1016400983 # pharmacokinetic
+-197697156 # distribution
+-1888315032 # absorption
+-1972296656
+-1666356950
+-586867324 # oral midazolam
+-1624553884
+-1949016288 # extra coma
+-1720436888 # body
+819132548 # of elimination
+593615948 ec50
+-2081848871 # protein
+1236864598 # cl
+10504965 range
+412247270 # whole span
+2099709336 less than
+-1432290358
+1544912066 # ratios
+-778177641 # maximum..
+1045430870 
+516294806
+-228683933
+-582503469
+-1867143482 # steady state
+-1993566842
+636219836
+-1769108535
+1705704901
+-99899954 # half-life
+-278614581
+-1346198158
+970933439
+-1168656442
+1584861580
+-570437360
+248254737
+-1825963520
+-698238180
+770597884
+1803326550 parenthesis
+-1299217880
+-1473635621 # body-weight
+-410551200
+277353764 first-order
+-1564805276 # apparent initial half-life
+-505059157
+-2062199833
+818751286
+213630191
+842465359
+-765603333
+1342496236
+-1200897608
+-1595607910
+-44238274
+-1981298226
+1391942156
+-1485674192
+811887785
+-912297296
+1291792258
+5081044
+-883249704 # between?
+-1610576995
+
+
+GFR no - check
+crcl no - check
+
+
+

@@ -48,6 +48,7 @@ def main(
                                        relations=relations_bert)
 
             sentence_ready["metadata"] = example["metadata"] if "metadata" in example.keys() else dict()
+            sentence_ready["_task_hash"] = example["_task_hash"] if "_task_hash" in example.keys() else 888
             out_annotations.append(sentence_ready)
 
         out_path = os.path.join(output_dir, prodigy_annotated_file)

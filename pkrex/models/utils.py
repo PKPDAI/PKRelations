@@ -456,12 +456,8 @@ def predict_pl_bert_ner(inp_texts, inp_model, inp_tokenizer, batch_size, n_worke
 
     for idx, batch in tqdm(enumerate(predict_loader)):
         with torch.no_grad():
-            # if is_rex: # TODO: adapt for old bert if needed
-            h = inp_model.bert(batch['input_ids'], attention_mask=batch['attention_mask'])[0]
-            batch_logits = inp_model.predict_entities(sequence_bert_output=h)
-            # else:
-            #    batch_logits = inp_model(input_ids=batch['input_ids'],
-            #                             attention_masks=batch['attention_mask']).to('cpu')
+            batch_logits = inp_model(input_ids=batch['input_ids'],
+                                     attention_masks=batch['attention_mask']).to('cpu')
 
             batch_predicted_entities = predict_bio_tags(model_logits=batch_logits, inp_batch=batch,
                                                         id2tag=inp_model.id2tag)

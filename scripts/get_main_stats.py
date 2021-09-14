@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 def main(
-        input_file: str = typer.Option(default="data/pubmedbert_tokenized/test-all-ready-fixed-6.jsonl",
+        input_file: str = typer.Option(default="data/pubmedbert_tokenized/train-all-reviewed-clean-4.jsonl",
                                        help="File to perform checks on"),
 
 ):
@@ -25,7 +25,7 @@ def main(
         plt.title(f'Number of tokens per entity type {en}')
         plt.hist(en_lengths, bins=20)
         print(
-            f"Entity type: {en}; Number of mentions {c}; Average length: {round(sum(en_lengths) / len(en_lengths), 2)}")
+            f"Entity type: {en}; Number of mentions {c}; Average # tokens: {round(sum(en_lengths) / len(en_lengths), 2)}")
         i += 1
 
     print("\n", 10 * "=", "RELATION STATS", 10 * "=")
@@ -52,7 +52,7 @@ def main(
         plt.title(f'Number tokens between entities of relation type {r}')
         plt.hist(rels_distance, bins=20)
         print(
-            f"Relation {c}; Average intermediate tokens: {round(sum(rels_distance) / len(rels_distance), 2)}")
+            f"Relation {c}; Average distance: {round(sum(rels_distance) / len(rels_distance), 2)} tokens appart")
         i += 1
 
     plt.show()

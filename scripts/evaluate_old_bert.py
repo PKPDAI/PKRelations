@@ -2,12 +2,23 @@ import os
 from pathlib import Path
 import typer
 from transformers import BertTokenizerFast
-from pkrex.models.old_bert_ner import load_pretrained_model
+from pkrex.models.old_bert_ner import load_pretrained_model, get_avg_ner_metrics
 from pkrex.annotation_preproc import view_all_entities_terminal, clean_instance_span
 from pkrex.utils import read_jsonl, print_ner_scores
 
 from pkrex.models.utils import predict_pl_bert_ner
 from nervaluate import Evaluator
+
+
+def compute_micro_macro(inp_res, inp_types):
+    valid_values = [v for v in inp_res.values() if v['support'] > 0]
+    for metric_type in inp_types:
+        print(f"{metric_type} match:")
+        macro = sum([v[metric_type]['f1'] for v in valid_values]) / len(valid_values)
+        total_support = sum(v['support'] for v in valid_values)
+        micro = sum([v[metric_type]['f1'] * (v['support'] / total_support) for v in valid_values])
+        print(f"Micro: {micro}")
+        print(f"Macro: {macro}")
 
 
 def main(
@@ -24,7 +35,7 @@ def main(
 
         batch_size: int = typer.Option(default=256, help="Batch size"),
 
-        gpu: bool = typer.Option(default=True, help="Whether to use GPU for inference"),
+        gpu: bool = typer.Option(default=False, help="Whether to use GPU for inference"),
 
         n_workers: int = typer.Option(default=12, help="Number of workers to use for the dataloader"),
 
@@ -56,6 +67,9 @@ def main(
 
     # print(results_agg)
     print_ner_scores(inp_dict=results_agg, is_spacy=False)
+
+    avg_metrics = get_avg_ner_metrics(results_agg, all_ent_types)[0]
+    compute_micro_macro(avg_metrics, ['strict', 'partial'])
     if display_errors or display_all:
         i = 0
         for instance, predicted_ent, true_ent in zip(predict_sentences, predicted_entities_offsets, true_entities):

@@ -22,9 +22,9 @@ def fix_incorrect_dvals(inp_annotation: Dict) -> Dict:
                 assert inp_relation["child_span"]["label"] in ["VALUE", "RANGE"]
                 # We are now sure that a D_VAL relation has been assigned from a central value/range to another
                 # value/range, so we will flip that relation to make it from the other value towards the central value
-                print(f"The following sentence had a D_VAL relation from a central value to a deviation value, "
-                      f"we are changing it...\n{inp_annotation['text']}\n{inp_annotation['_input_hash']}"
-                      f" {inp_annotation['sentence_hash']}\n Annotator: {inp_annotation['_session_id'].split('-')[-1]}")
+                #   print(f"The following sentence had a D_VAL relation from a central value to a deviation value, "
+                #         f"we are changing it...\n{inp_annotation['text']}\n{inp_annotation['_input_hash']}"
+                #         f" {inp_annotation['sentence_hash']}\n Annotator: {inp_annotation['_session_id'].split('-')[-1]}")
                 new_relation = flip_relation_entities(inp_relation)
                 new_relations.append(new_relation)
             else:
