@@ -79,7 +79,7 @@ cython_debug/
 /data
 !/data/dictionaries
 !/data/tokenizers/rex-tokenizer
+!/data/annotations/P1/ready/train-all-reviewed.jsonl
 /labels_1.jsonl
 /labels_2.jsonl
-/data/part2/
 /brat/
