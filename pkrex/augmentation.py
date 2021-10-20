@@ -1,7 +1,7 @@
 import re
 from typing import List, Dict
 
-TO_REMOVE = []#['[', '(', ']', ')']
+TO_REMOVE = []  # ['[', '(', ']', ')']
 DOT_SYNS = ['x', '*', '×', '•', ' ', '⋅']
 UNIT_SYNONYMS = {
     '·': DOT_SYNS,
@@ -17,7 +17,6 @@ UNIT_SYNONYMS = {
     'mM': ['mmol', 'milimol'],
     'μM': ['mumol', 'micromol', 'micromols'],
     'pM': ['pmol', 'pmols']
-
 }
 
 MAGNITUDES = {
@@ -27,6 +26,8 @@ MAGNITUDES = {
     'CONCENTRATION': ['pM', 'nM', 'μM', 'mM', 'M']
 }
 
+
+# L/h/kg -> Volume/(Time*Mass)
 
 def subs_underscore_dot(inp_mention: str, standard_dot: str = '·') -> str:
     """

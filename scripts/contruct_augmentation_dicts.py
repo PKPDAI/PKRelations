@@ -5,6 +5,7 @@ from pkrex.utils import read_jsonl
 import pkrex.augmentation as pkaug
 from collections import Counter
 import pandas as pd
+from termcolor import colored
 
 
 def main(
@@ -17,7 +18,7 @@ def main(
         config = json.load(cf)
 
     param_units_dict = {}
-
+    all_t = []
     original = []
     standard = []
     all_unit_mentions = []
@@ -29,6 +30,19 @@ def main(
                     ch_start = ent_instance['start']
                     ch_end = ent_instance['end']
                     units_mention = an['text'][ch_start:ch_end]
+                    p = []
+                    for ch in units_mention:
+                        if ch == "/":
+                            p.append(ch)
+                    if len(p) > 1:
+                        annotation_text = an['text']
+                        if annotation_text not in all_t:
+                            text_left = annotation_text[0:ch_start]
+                            mention_text = colored(annotation_text[ch_start:ch_end],
+                                                   'green', attrs=['reverse', 'bold'])
+                            text_right = annotation_text[ch_end:]
+                            print(text_left + mention_text + text_right)
+                            all_t.append(annotation_text)
                     original.append(units_mention)
                     units_mention = pkaug.standardise_unit(units_mention)
                     standard.append(units_mention)
@@ -53,12 +67,24 @@ def main(
     counts_units = Counter(all_unit_mentions).most_common()
 
     already_printed = []
+    mapps = {}
     for x, y in zip(original, standard):
+        if y in mapps.keys():
+            mapps[y] += [x]
+        else:
+            mapps[y] = [x]
         if x not in already_printed:
             print(x, ' --> ', y)
             already_printed.append(x)
     pd.DataFrame(counts_units, columns=['unit_mention', 'frequency']).to_csv(output_freqs)
     a = 1
+
+
+def preprocessing(inp_unit_mention: str) -> str:
+    if "(-1)" in inp_unit_mention:
+        inp_unit_mention = inp_unit_mention.replace("(-1)", "-1")
+
+    return inp_unit_mention
 
 
 if __name__ == "__main__":

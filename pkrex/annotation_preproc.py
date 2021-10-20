@@ -21,10 +21,10 @@ def fix_incorrect_dvals(inp_annotation: Dict) -> Dict:
                 assert inp_relation["label"] == "D_VAL"
                 assert inp_relation["child_span"]["label"] in ["VALUE", "RANGE"]
                 # We are now sure that a D_VAL relation has been assigned from a central value/range to another
-                # value/range, so we will flip that relation to make it from the other value towards the central value
-                #   print(f"The following sentence had a D_VAL relation from a central value to a deviation value, "
-                #         f"we are changing it...\n{inp_annotation['text']}\n{inp_annotation['_input_hash']}"
-                #         f" {inp_annotation['sentence_hash']}\n Annotator: {inp_annotation['_session_id'].split('-')[-1]}")
+                # value/range, so we will flip that relation to make it from the other value towards the central
+                # value print(f"The following sentence had a D_VAL relation from a central value to a deviation
+                # value, " f"we are changing it...\n{inp_annotation['text']}\n{inp_annotation['_input_hash']}" f" {
+                # inp_annotation['sentence_hash']}\n Annotator: {inp_annotation['_session_id'].split('-')[-1]}")
                 new_relation = flip_relation_entities(inp_relation)
                 new_relations.append(new_relation)
             else:
@@ -395,8 +395,8 @@ def remove_irrelevant_entities(inp_annotation: Dict, preserve_pk: bool, keep_tok
 
 def get_c_val_dicts(annotation: Dict) -> List[Dict]:
     """
-    Gets as an input an annotated dataset and it returns a list of central values with all the related information
-    in the form of:
+    Gets as an input an annotated sentence in prodigy format and it returns a list of central values with all
+    the related information in the form of:
 
     dict(
         parameter=None,
