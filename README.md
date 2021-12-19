@@ -11,8 +11,7 @@ python scripts/select_relevant_sentences.py \
    --path-pmid data/raw/pmids \
    --path-pmc data/raw/pmcs/all_sentences.jsonl \
    --path-relevant-pmids data/raw/allPapersPMIDS.txt \
-   --out-dir data/gold/base_files/ 
-   
+   --out-dir data/gold/base_files/
 ````
 
 
@@ -89,6 +88,9 @@ Annotation recipes are stored at the `recipes` folder. To launch the recipe run:
 PRODIGY_ALLOWED_SESSIONS=ferran,vicky,joe,frank PRODIGY_PORT=8001 prodigy custom.rel.manual rex-pilot-50 data/models/tokenizers/super-tokenizer data/gold/train0-200.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE  --wrap -F recipes/rel_custom.py
 ````
 
+PRODIGY_ALLOWED_SESSIONS=ferran PRODIGY_PORT=8001 prodigy custom.rel.manual aug_check data/models/tokenizers/super-tokenizer data/annotations/P1/ready/train-all-reviewed-augmented.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE,CHEMICAL,DISEASE,SPECIES,ROUTE  --wrap -F recipes/rel_custom.py
+
+
 #### Review annotated data
 
 Run this to retrieve a file from azure storage containing annotations:
@@ -105,14 +107,17 @@ This will create different prodigy datasets on your local machine, one for each 
 Launch review:
 
 ````bash
-prodigy review rex-pilot-reviewed rex-pilot-ferran-frank-done,rex-pilot-ferran-ferran-done,rex-pilot-ferran-simon-done --view-id relations 
+prodigy review rex-pilot-reviewed rex-pilot-ferran-frank-done,rex-pilot-ferran-ferran-done,rex-pilot-ferran-simon-done --view-id relations
 ````
+
 
 Review existing annotations from a single file: 
 
 ````bash
 prodigy custom.rel.manual rex-simon-reviewed data/models/tokenizers/rex-tokenizer data/rex-pilot-ferran-simon-done.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE  --wrap -F recipes/rel_custom.py
 ````
+
+
 
 ## Model development
 

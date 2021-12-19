@@ -13,11 +13,14 @@ def run(path_inp_file: str, resolve_overlapping: bool, drop_irrelevant: bool):
     nlp_drugs = spacy.load("en_ner_bc5cdr_md")
     out_sentences = []
     old_sentences = list(read_jsonl(path_inp_file))
+
     for sentence in tqdm(old_sentences):
         extra_spans = get_drugs_diseases_species(inp_sentence=sentence["text"],
                                                  inp_entities=["CHEMICAL", "DISEASE", "SPECIES", "GENE", "MUTATION"],
                                                  inp_model=nlp_drugs,
                                                  use_local_bern=True)
+
+
         if extra_spans:
             all_spans = sentence["spans"] + extra_spans
             if resolve_overlapping:

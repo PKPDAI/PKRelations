@@ -35,6 +35,7 @@ def main(
     """
     Apply your trained NER model to the test/development set
     """
+
     p1_annotations = list(read_jsonl(input_file))
     print("{} P1 annotated sentences".format(len(p1_annotations)))
     p2_annotations = filter_part_2(inp_annotations=p1_annotations)

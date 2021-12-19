@@ -26,7 +26,7 @@ def compute_micro_macro(inp_res, inp_types):
 
 def main(
         model_checkpoint: Path = typer.Option(
-            default="results/checkpoints/second-version-rex-all-128-test-epoch=0013-cval_f1=0.79.ckpt",
+            default="results/checkpoints/rex-augmented-128-clean-epoch=0017-cval_f1=0.87.ckpt",
             help="Path to the input model"),
 
         predict_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/train-all-reviewed.jsonl",

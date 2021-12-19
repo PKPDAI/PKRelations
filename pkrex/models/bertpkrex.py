@@ -133,12 +133,16 @@ class BertPKREX(pl.LightningModule):
         self.log('train_loss', train_loss, prog_bar=True)
         self.log('train_rex_loss', train_rex_loss, prog_bar=True)
 
-    def get_rex_masks(self, inp_rel_tuples):
+    def get_rex_masks(self, inp_rel_tuples: torch.Tensor):
         rex_masks = None
-        if inp_rel_tuples[1].nelement() != 0:
+        # if inp_rel_tuples.dim() < 2:
+        #     print(inp_rel_tuples)
+        #     return rex_masks
+        if inp_rel_tuples.nelement() != 0 and inp_rel_tuples[1].nelement() != 0:
             rex_masks = ~torch.all(torch.eq(torch.flatten(inp_rel_tuples, end_dim=1),
                                             torch.tensor([0, 0], dtype=torch.int64).to(self.device)),
                                    dim=1)
+
         return rex_masks
 
     def validation_step(self, val_batch, batch_nb):
@@ -170,7 +174,11 @@ class BertPKREX(pl.LightningModule):
 
         rex_masks = None
         if self.current_epoch > -1:  # wait for 2 epochs
+            print(pred_batch['rel_tuples'].shape)
+            # if pred_batch['rel_tuples'].dim() < 2:
+            #     a = 1
             rex_masks = self.get_rex_masks(inp_rel_tuples=pred_batch['rel_tuples'])
+
         rex_logits = None
         if rex_masks is not None and sum(rex_masks) != 0:
             rex_logits = self.predict_relations(inp_sequence_rep=h, inp_ent_masks=pred_batch['entity_masks'],
@@ -207,6 +215,13 @@ class BertPKREX(pl.LightningModule):
                                          zero_division=0)
         return c_report
 
+    @staticmethod
+    def get_f1_from_cr(inp_rex_mentrics, inp_key):
+        if inp_key in inp_rex_mentrics:
+            return inp_rex_mentrics[inp_key]['f1-score']
+        else:
+            return None
+
     def validation_epoch_end(self, outputs):
         val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         val_micro_strict = self.compute_mean_val(val_outputs=outputs, desired_field="val_micro_strict")
@@ -230,10 +245,10 @@ class BertPKREX(pl.LightningModule):
         self.log('val_units_strict', val_units_strict, prog_bar=True)
         self.log('val_range_strict', val_range_strict, prog_bar=True)
         self.log('val_compare_strict', val_compare_strict, prog_bar=True)
-        self.log('cval_f1', rex_metrics['C_VAL']['f1-score'], prog_bar=True)
-        self.log('dval_f1', rex_metrics['D_VAL']['f1-score'], prog_bar=True)
-        self.log('related_f1', rex_metrics['RELATED']['f1-score'], prog_bar=True)
-        self.log('norel_f1', rex_metrics['NO_RELATION']['f1-score'], prog_bar=True)
+        self.log('cval_f1', self.get_f1_from_cr(inp_rex_mentrics=rex_metrics, inp_key='C_VAL'), prog_bar=True)
+        self.log('dval_f1', self.get_f1_from_cr(inp_rex_mentrics=rex_metrics, inp_key='D_VAL'), prog_bar=True)
+        self.log('related_f1', self.get_f1_from_cr(inp_rex_mentrics=rex_metrics, inp_key='RELATED'), prog_bar=True)
+        self.log('norel_f1', self.get_f1_from_cr(inp_rex_mentrics=rex_metrics, inp_key='NO_RELATION'), prog_bar=True)
 
     def create_pred_rex_batch(self, ner_logits, ner_labels, ent_masks, rel_labels, rel_tuples):
         ner_predictions = ner_logits.argmax(dim=2)

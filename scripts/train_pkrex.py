@@ -13,10 +13,10 @@ import os
 
 
 def main(
-        training_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/train-all-reviewed-clean-4.jsonl",
+        training_file_path: Path = typer.Option(default="data/pk-bert-tokenized/train-all-reviewed-augmented.jsonl",
                                                 help="Path to the jsonl file with the training data"),
 
-        val_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/test-all-ready-fixed-6.jsonl",
+        val_file_path: Path = typer.Option(default="data/pk-bert-tokenized/test-all-reviewed.jsonl",
                                            help="Path to the jsonl file with the development data"),
 
         output_dir: Path = typer.Option(default="results/",
@@ -37,8 +37,8 @@ def main(
     if debug_mode:
         config["n_workers_dataloader"] = 0
         config["gpus"] = False
-        limit_train_batches = 0.2
-        limit_val_batches = 0.5
+        limit_train_batches = 0.05
+        limit_val_batches = 1.
     print(f"Debug mode is {str(debug_mode)}")
 
     assert config['tag_type'] in ["bio", "biluo"]
@@ -60,6 +60,7 @@ def main(
     tokenizer = BertTokenizerFast.from_pretrained(config['base_model'])
 
     # ============ 3. Get data loaders and tag-id converters =============== #
+    print("=========== Constructing DataLoaders ===========")
     if not config["final_train"]:
         train_dataloader, tag2id, id2tag, scaling_dict = get_training_dataloader(
             training_data_file=config['training_file_path'],

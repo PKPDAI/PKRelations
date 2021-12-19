@@ -37,8 +37,7 @@ def custom_rel_manual(dataset: str,
                       add_ents: bool = False,
                       add_nps: bool = False,
                       wrap: bool = False,
-                      hide_arrow_heads: bool = False,
-                      #  correct_examples: bool = False
+                      hide_arrow_heads: bool = False
                       ):
     components = rel_manual(
         dataset=dataset,

@@ -65,11 +65,24 @@ def assign_index_to_spans(span_list: List[Dict]) -> List[Dict]:
     return []
 
 
+def cleanspans(inp_spans):
+    out_spans = []
+    for s in inp_spans:
+        new_dict = dict(start=s['start'], end=s['end'], label=s['label'])
+        if 'ent_id' in s.keys():
+            new_dict['ent_id'] = s['ent_id']
+        out_spans.append(new_dict)
+    return out_spans
+
+
 def align_tokens_and_annotations_bilou(tokenized: Encoding, annotations: List[Dict], example: Dict,
                                        relations: List[Dict]):
-    annotations_sorted = assign_index_to_spans(sorted(annotations, key=lambda d: (d['start'], d['end'], ['label'])))
-    annotations_from_rel = assign_index_to_spans(get_unique_spans_from_rels(rels=relations))
-    assert annotations_sorted == annotations_from_rel
+    annotations_sorted = cleanspans(
+        assign_index_to_spans(sorted(annotations, key=lambda d: (d['start'], d['end'], ['label']))))
+    annotations_from_rel = cleanspans(assign_index_to_spans(get_unique_spans_from_rels(rels=relations)))
+
+    if annotations_sorted != annotations_from_rel:
+        a = 1
 
     tokens = tokenized.tokens
     aligned_labels_bio = ["O"] * len(tokens)  # Make a list to store our labels the same length as our tokens

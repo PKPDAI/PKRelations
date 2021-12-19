@@ -1,6 +1,5 @@
-import random
-
 import pkrex.augmentation as pkaug
+from pkrex.augmentation_syns import AUGMENT_SYNS
 from pkrex.annotation_preproc import view_all_entities_terminal
 
 EXAMPLE = "2.2 ng.ml/l and 0.4 ng.10-1"
@@ -13,12 +12,15 @@ def test_subs_underscore_dot():
 
 
 ANNOTATED_EXAMPLE = {
-    "text": "The auc was lower than 3.9 ml*h*kg",
+    "text": "The auc was lower than 3.9 ml·h·kg and AUC ratio was 6 and 3-fold for midazolam. Clearance ranged from 4.1 to 5.",
     "spans": [
         dict(start=4, end=7, label="PK"),
         dict(start=12, end=22, label="COMPARE"),
         dict(start=23, end=26, label="VALUE"),
         dict(start=27, end=34, label="UNITS"),
+        dict(start=53, end=54, label="VALUE"),
+        dict(start=59, end=65, label="VALUE"),
+        dict(start=103, end=111, label="RANGE")
     ],
 }
 
@@ -34,56 +36,51 @@ DICT_REPLACE = {
         ["lower than", "<"]
     ]
 }
-
-
-def check_mention_in_sublist(inp_mention, list_of_lists):
-    for sublist in list_of_lists:
-        if inp_mention in sublist:
-            return sublist
-    return []
-
-
-def augment_sentence(inp_anotation):
-    if inp_anotation["spans"]:
-        all_original_sans = sorted(inp_anotation["spans"], key=lambda anno: anno['start'])
-        augmented_text = inp_anotation['text']
-        overall_addition = 0
-        out_spans = []
-        for span in all_original_sans:
-            sp_lab = span['label']
-            ent_start = span['start'] + overall_addition
-            ent_end = span['end'] + overall_addition
-            sp_mention = augmented_text[ent_start:ent_end]
-            new_span_annotated = dict(start=ent_start, end=ent_end, label=sp_lab)
-            if sp_lab in DICT_REPLACE.keys():
-                provisional_candidates = check_mention_in_sublist(inp_mention=sp_mention.lower(),
-                                                                  list_of_lists=DICT_REPLACE[sp_lab])
-                if provisional_candidates:
-                    candidates = [x for x in provisional_candidates if x != sp_mention]
-                    if candidates:
-                        # MAKE REPLACEMENT
-                        new_span_mention = random.choice(candidates)
-                        original_sp_len = ent_end - ent_start
-                        new_sp_len = len(new_span_mention)
-                        to_add = new_sp_len - original_sp_len
-                        new_span_annotated['end'] += to_add
-                        overall_addition += to_add
-                        augmented_text = augmented_text[0:ent_start] + new_span_mention + augmented_text[ent_end:]
-            out_spans.append(new_span_annotated)
-        out_annotation = dict(text=augmented_text,
-                              spans=out_spans)
-        return out_annotation
-    return None
+EXPECTED_TEXT = "The area under the curve was < 4.14 ml·h·kg and AUC ratio was 9 and 3-fold for midazolam. Clearance ranged from 4 to 5.68."
 
 
 def test_augment_sentence():
     original_sentece = view_all_entities_terminal(inp_text=ANNOTATED_EXAMPLE['text'],
                                                   character_annotations=ANNOTATED_EXAMPLE['spans'])
 
-    print(original_sentece)
-
-    augmented_sentence = augment_sentence(inp_anotation=ANNOTATED_EXAMPLE)
+    augmented_sentence = pkaug.augment_sentence(inp_anotation=ANNOTATED_EXAMPLE, replacable_dict=DICT_REPLACE)
     if augmented_sentence:
-        print(view_all_entities_terminal(inp_text=augmented_sentence['text'],
-                                         character_annotations=augmented_sentence['spans']))
+        augmented_sentence_print = view_all_entities_terminal(inp_text=augmented_sentence['text'],
+                                                              character_annotations=augmented_sentence['spans'])
+        print("\n", original_sentece)
+        print(augmented_sentence_print)
+
+    assert augmented_sentence['text'] == EXPECTED_TEXT
+    assert augmented_sentence['spans'] == [{'start': 4, 'end': 24, 'label': 'PK'},
+                                           {'start': 29, 'end': 30, 'label': 'COMPARE'},
+                                           {'start': 31, 'end': 35, 'label': 'VALUE'},
+                                           {'start': 36, 'end': 43, 'label': 'UNITS'},
+                                           {'start': 62, 'end': 63, 'label': 'VALUE'},
+                                           {'start': 68, 'end': 74, 'label': 'VALUE'},
+                                           {'start': 112, 'end': 121, 'label': 'RANGE'}]
+
+
+ANNOTATED_EXAMPLE_2 = {
+    "text": "The resulting estimates of hepatic clearance were 3.91, 5.01, and 4.69 L/h/kg using well-stirred, parallel tube and dispersion models, respectively; these estimates are comparable to the clearance following i.v. dosing of SN30000 (5\u201310 L/hr/kg; Table 2).",
+    "spans": [{'start': 27, 'end': 44, 'label': 'PK'},
+              {'start': 50, 'end': 54, 'label': 'VALUE'},
+              {'start': 56, 'end': 60, 'label': 'VALUE'},
+              {'start': 66, 'end': 70, 'label': 'VALUE'},
+              {'start': 71, 'end': 77, 'label': 'UNITS'},
+              {'start': 187, 'end': 196, 'label': 'PK'},
+              {'start': 231, 'end': 235, 'label': 'RANGE'},
+              {'start': 236, 'end': 243, 'label': 'UNITS'}]
+}
+
+
+def test_augment_big_dict():
+    original_sentece = view_all_entities_terminal(inp_text=ANNOTATED_EXAMPLE_2['text'],
+                                                  character_annotations=ANNOTATED_EXAMPLE_2['spans'])
+
+    augmented_sentence = pkaug.augment_sentence(inp_anotation=ANNOTATED_EXAMPLE_2, replacable_dict=AUGMENT_SYNS)
+
+    augmented_sentence_print = view_all_entities_terminal(inp_text=augmented_sentence['text'],
+                                                          character_annotations=augmented_sentence['spans'])
+    print("\n", original_sentece)
+    print(augmented_sentence_print)
     a = 1

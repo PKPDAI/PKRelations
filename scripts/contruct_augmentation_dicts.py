@@ -1,4 +1,6 @@
 import json
+from typing import List
+
 import typer
 from pathlib import Path
 from pkrex.utils import read_jsonl
@@ -22,6 +24,8 @@ def main(
     original = []
     standard = []
     all_unit_mentions = []
+    all_range_mentions = []
+    compares = []
     for an in annotations:
         for r in an['relations']:
             for sp_ch in ['head_span', 'child_span']:
@@ -63,6 +67,27 @@ def main(
                                             param_units_dict[units_mention] = tmp_list
                                     else:
                                         param_units_dict[units_mention] = [pk_mention]
+                else:
+                    if ent_instance['label'] == 'RANGE':
+                        ch_start = ent_instance['start']
+                        ch_end = ent_instance['end']
+                        all_range_mentions.append(an['text'][ch_start:ch_end])
+                    if ent_instance['label'] == 'COMPARE':
+                        ch_start = ent_instance['start']
+                        ch_end = ent_instance['end']
+                        compares.append(an['text'][ch_start:ch_end])
+
+    c_ranges = Counter(all_range_mentions).most_common()
+    range_separators = Counter([r.strip() for r in
+                                ["".join([ch for ch in x[0] if not ch.isdigit() and not ch == "."]) for x in
+                                 c_ranges]]).most_common()
+    range_sep_list = list(set([r.strip() for r in
+                               ["".join([ch for ch in x[0] if not ch.isdigit() and not ch == "."]) for x in c_ranges]]))
+
+    range_sep_list = list(reversed(sorted(range_sep_list, key=len)))
+
+    range_values = [pkaug.split_longest_separator(inp_mention=tmp_range, sep_candidates=range_sep_list) for tmp_range
+                    in all_range_mentions]
 
     counts_units = Counter(all_unit_mentions).most_common()
 

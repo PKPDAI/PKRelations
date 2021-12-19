@@ -169,7 +169,8 @@ def process_mention_data(inp_samples: List[Dict], inp_tokenizer: BertTokenizerFa
 
     check_labels_tokens_alignment(tokens=all_tokens, subword_labels=ner_labels)
 
-    print_few_mentions(all_tokens=all_tokens, labels=ner_labels, n=5)
+    if print_tokens:
+        print_few_mentions(all_tokens=all_tokens, labels=ner_labels, n=5)
 
     encoded_ner_labels = pad_and_encode_ner_labels(all_ner_labels=ner_labels,
                                                    max_len=max_len,

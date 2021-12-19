@@ -2,7 +2,6 @@
 import hashlib
 from pathlib import Path
 from typing import Dict, List
-
 import prodigy
 import typer
 from pkrex.utils import read_jsonl, write_jsonl
