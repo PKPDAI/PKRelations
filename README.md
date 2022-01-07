@@ -339,12 +339,12 @@ CHECK TRAINING
 
 
 
-ROUND2 (STILL TO DO)
 
-TEST: -1905290727
 
-TRAIN:
-retention time: -1294653114, -1372168709
-recoveries (dont'): -363191018
-g protein: -2081848871
-accumulation ratio: -1597632365, 
+
+Blob storages:
+
+URL:
+https://pkannotations.blob.core.windows.net/pkrex/gold/train.jsonl?sv=2020-10-02&st=2022-01-07T14%3A01%3A51Z&se=2124-07-20T16%3A01%3A00Z&sr=c&sp=racwl&sig=Rf0C7R5cGJNq90Te3hlJmOTSTAQwHGzo0qiVyDvBThk%3D
+QUERY:
+?sv=2020-10-02&st=2022-01-07T14%3A01%3A51Z&se=2124-07-20T16%3A01%3A00Z&sr=c&sp=racwl&sig=Rf0C7R5cGJNq90Te3hlJmOTSTAQwHGzo0qiVyDvBThk%3D
