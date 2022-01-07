@@ -9,7 +9,7 @@ from termcolor import colored
 
 
 def main(
-        input_file: Path = typer.Option(default="data/annotations/P1/ready/train-all-reviewed.jsonl"),
+        input_file: Path = typer.Option(default="data/annotations/P1/ready/train.jsonl"),
         units_dict: Path = typer.Option(default="data/dictionaries/data_augment.json"),
         output_freqs: Path = typer.Option(default="data/dictionaries/u_mention_freqs.csv")
 ):

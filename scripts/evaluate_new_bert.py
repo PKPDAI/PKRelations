@@ -27,7 +27,7 @@ def main(
             default="results/checkpoints/biobert-rex-new-128-clean-epoch=0010-cval_f1=0.90.ckpt",
             help="Path to the input model"),
 
-        predict_file_path: Path = typer.Option(default="data/biobert_tokenized/test-all-reviewed.jsonl",
+        predict_file_path: Path = typer.Option(default="data/biobert_tokenized/test.jsonl",
                                                help="Path to the jsonl file of the test/evaluation set"),
 
         display_errors: bool = typer.Option(default=True, help="Whether to display sentences with errors"),

@@ -12,11 +12,11 @@ def main(
         # microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract-fulltext
         bert_model_name: str = typer.Option(default="dmis-lab/biobert-v1.1",
                                             help="Path to the input model"),
-        prodigy_annotated_dir: str = typer.Option(default="data/annotations/P1/ready",
+        prodigy_annotated_dir: str = typer.Option(default="data/annotations/P1/ready/joined",
                                                   help="Path to the jsonl file of the annotated "
                                                        "dataset using prodigy.ner recipe"),
 
-        output_dir: str = typer.Option(default="data/biobert_tokenized/",
+        output_dir: str = typer.Option(default="data/biobert_tokenized/joined",
                                        help="Output path")
 ):
     files_to_transform = [x for x in os.listdir(prodigy_annotated_dir) if ".jsonl" in x]

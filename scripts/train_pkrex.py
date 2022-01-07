@@ -13,10 +13,10 @@ import os
 
 
 def main(
-        training_file_path: Path = typer.Option(default="data/pk-bert-tokenized/train-all-reviewed-augmented.jsonl",
+        training_file_path: Path = typer.Option(default="data/pk-bert-tokenized/train-augmented.jsonl",
                                                 help="Path to the jsonl file with the training data"),
 
-        val_file_path: Path = typer.Option(default="data/pk-bert-tokenized/test-all-reviewed.jsonl",
+        val_file_path: Path = typer.Option(default="data/pk-bert-tokenized/test.jsonl",
                                            help="Path to the jsonl file with the development data"),
 
         output_dir: Path = typer.Option(default="results/",

@@ -9,8 +9,8 @@ import copy
 
 
 def main(
-        input_file: Path = typer.Option(default="data/annotations/P1/ready/train-all-reviewed.jsonl"),
-        out_file: Path = typer.Option(default="data/annotations/P1/ready/train-all-reviewed-augmented.jsonl")
+        input_file: Path = typer.Option(default="data/annotations/P1/ready/joined/train-dev-test.jsonl"),
+        out_file: Path = typer.Option(default="data/annotations/P1/ready/train-dev-test-augmented.jsonl")
 ):
     annotations = list(read_jsonl(input_file))
     a = 1

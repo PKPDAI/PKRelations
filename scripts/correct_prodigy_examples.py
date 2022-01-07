@@ -9,7 +9,7 @@ from recipes.rel_custom import custom_rel_manual
 
 def main(
 
-        base_file: str = typer.Option(default="data/annotations/P1/ready/train-all-reviewed.jsonl",
+        base_file: str = typer.Option(default="data/annotations/P1/ready/train.jsonl",
                                       help="Local output directory to save the model and files"),
         new_dataset_name: str = typer.Option(default="train-all-reviewed-444",
                                              help="Whether to save the model to azure"),
