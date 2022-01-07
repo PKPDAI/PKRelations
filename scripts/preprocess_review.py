@@ -45,11 +45,11 @@ def replace_conflicting_tokens(inp_annotation):
 
 
 def main(
-        input_file_path: Path = typer.Option(default="data/annotations/P1/ready/test-all-reviewed.jsonl",
+        input_file_path: Path = typer.Option(default="train-extra-20.jsonl",
                                              help="File that we want to preprocess"),
 
         output_file_path: Path = typer.Option(
-            default="data/annotations/P1/ready/test-all-reviewed-2.jsonl",
+            default="data/annotations/P1/ready/train-extra-20-all-reviewed.jsonl",
             help="Path to the output file"),
 
         remove_ents=typer.Option(default=["TYPE_MEAS"],
@@ -58,7 +58,7 @@ def main(
         keep_pk_ent: bool = typer.Option(default=False,
                                          help="Whether to keep pk entities that are not part of a relationship"),
 
-        display_relations: bool = typer.Option(default=True,
+        display_relations: bool = typer.Option(default=False,
                                                help="Whether to review the annotated data"),
 
         remove_sentences_with_latex_tags: bool = typer.Option(default=True,
@@ -66,7 +66,7 @@ def main(
 
 ):
     output_dataset = [preprocess_review_sentence(prodigy_annotation=sentence, idx=idx, keep_pk=keep_pk_ent,
-                                                 remove_ents=remove_ents)
+                                                 remove_ents=remove_ents, keep_tokens=True)
                       for idx, sentence in tqdm(enumerate(read_jsonl(input_file_path)))]
     if remove_sentences_with_latex_tags:
         output_dataset = [x for x in output_dataset if "usepackage{" not in x["text"]]

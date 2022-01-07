@@ -16,7 +16,7 @@ def main(
                                                   help="Path to the jsonl file of the annotated "
                                                        "dataset using prodigy.ner recipe"),
 
-        output_dir: str = typer.Option(default="data/pkbert_tokenized/",
+        output_dir: str = typer.Option(default="data/biobert_tokenized/",
                                        help="Output path")
 ):
     files_to_transform = [x for x in os.listdir(prodigy_annotated_dir) if ".jsonl" in x]

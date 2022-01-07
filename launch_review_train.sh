@@ -1,1 +1,1 @@
-PRODIGY_PORT=8001 prodigy custom.rel.manual dev200-300-firstpass data/models/tokenizers/super-tokenizer data/annotations/P1/to_annotate/dev200-500-preannotated.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,COMPARE,RANGE,VALUE --wrap -F recipes/rel_custom.py
+PRODIGY_PORT=8001 prodigy custom.rel.manual train-extra-20 data/models/tokenizers/super-tokenizer data/annotations/P1/to_annotate/train-extra-2-preannotated-2.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,COMPARE,RANGE,VALUE --wrap -F recipes/rel_custom.py

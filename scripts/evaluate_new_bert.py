@@ -1,14 +1,12 @@
 import os
 from pathlib import Path
 from typing import List, Dict
-
 import typer
 from sklearn.metrics import classification_report
 from transformers import BertTokenizerFast
 from pkrex.models.bertpkrex import load_pretrained_model, get_avg_ner_metrics
 from pkrex.annotation_preproc import view_all_entities_terminal, clean_instance_span, visualize_relations_brat
 from pkrex.utils import read_jsonl, print_ner_scores
-
 from pkrex.models.utils import predict_pl_bert_rex, arrange_relationship
 from nervaluate import Evaluator
 
@@ -26,17 +24,17 @@ def compute_micro_macro(inp_res, inp_types):
 
 def main(
         model_checkpoint: Path = typer.Option(
-            default="results/checkpoints/rex-augmented-128-clean-epoch=0017-cval_f1=0.87.ckpt",
+            default="results/checkpoints/biobert-rex-new-128-clean-epoch=0010-cval_f1=0.90.ckpt",
             help="Path to the input model"),
 
-        predict_file_path: Path = typer.Option(default="data/pubmedbert_tokenized/train-all-reviewed.jsonl",
+        predict_file_path: Path = typer.Option(default="data/biobert_tokenized/test-all-reviewed.jsonl",
                                                help="Path to the jsonl file of the test/evaluation set"),
 
         display_errors: bool = typer.Option(default=True, help="Whether to display sentences with errors"),
 
         display_all: bool = typer.Option(default=False, help="Whether to display all sentences "),
 
-        batch_size: int = typer.Option(default=16, help="Batch size"),
+        batch_size: int = typer.Option(default=32, help="Batch size"),
 
         gpu: bool = typer.Option(default=True, help="Whether to use GPU for inference"),
 
@@ -98,8 +96,14 @@ def main(
     pred_brat_annot = []
     true_brat_annot = []
     for pred_relations, true_relations, original_annot in zip(pred_rex_ready, true_rex_ready, predict_sentences):
-        pred_brat_annot.append(get_ready_brat(original_annot=original_annot, pred_relations=pred_relations))
-        true_brat_annot.append(get_ready_brat(original_annot=original_annot, pred_relations=true_relations))
+        pred_relations = [rel for rel in pred_relations if rel['label'] != "NO_RELATION"]
+        true_relations = [rel for rel in true_relations if rel['label'] != "NO_RELATION"]
+        pred_relations = sorted(pred_relations, key=lambda d: (d['head_span']['start'], d['child_span']['start']))
+        true_relations = sorted(true_relations, key=lambda d: (d['head_span']['start'], d['child_span']['start']))
+        if pred_relations != true_relations:
+            pred_brat_annot.append(get_ready_brat(original_annot=original_annot, pred_relations=pred_relations))
+            true_brat_annot.append(get_ready_brat(original_annot=original_annot, pred_relations=true_relations))
+    print(f"Sentences with different predictions: {len(pred_brat_annot)} of {len(pred_rex_ready)}")
     visualize_relations_brat(inp_annotations=pred_brat_annot, file_path="brat/rex_pred.html")
     visualize_relations_brat(inp_annotations=true_brat_annot, file_path="brat/rex_true.html")
     # 6.4 Compute F1 scores

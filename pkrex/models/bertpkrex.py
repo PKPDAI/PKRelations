@@ -138,10 +138,13 @@ class BertPKREX(pl.LightningModule):
         # if inp_rel_tuples.dim() < 2:
         #     print(inp_rel_tuples)
         #     return rex_masks
-        if inp_rel_tuples.nelement() != 0 and inp_rel_tuples[1].nelement() != 0:
-            rex_masks = ~torch.all(torch.eq(torch.flatten(inp_rel_tuples, end_dim=1),
-                                            torch.tensor([0, 0], dtype=torch.int64).to(self.device)),
-                                   dim=1)
+        try:
+            if inp_rel_tuples.nelement() != 0 and inp_rel_tuples[1].nelement() != 0:
+                rex_masks = ~torch.all(torch.eq(torch.flatten(inp_rel_tuples, end_dim=1),
+                                                torch.tensor([0, 0], dtype=torch.int64).to(self.device)),
+                                       dim=1)
+        except:
+            pass
 
         return rex_masks
 
@@ -174,7 +177,7 @@ class BertPKREX(pl.LightningModule):
 
         rex_masks = None
         if self.current_epoch > -1:  # wait for 2 epochs
-            print(pred_batch['rel_tuples'].shape)
+            # print(pred_batch['rel_tuples'].shape)
             # if pred_batch['rel_tuples'].dim() < 2:
             #     a = 1
             rex_masks = self.get_rex_masks(inp_rel_tuples=pred_batch['rel_tuples'])

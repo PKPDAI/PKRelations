@@ -151,12 +151,19 @@ https://stackoverflow.com/questions/31965558/how-to-display-a-variable-in-html
 
 ```` shell
 python scripts/train_pkrex.py \
-   --training-file-path data/pubmedbert_tokenized/train-all-reviewed.jsonl \
-   --val-file-path data/pubmedbert_tokenized/test-all-reviewed.jsonl \
+   --training-file-path data/biobert_tokenized/train-all-reviewed.jsonl \
+   --val-file-path data/biobert_tokenized/dev-all-reviewed.jsonl \
    --output-dir results \
    --model-config-file configs/config-biobert.json
 ````
 
+```` shell
+python scripts/train_pkrex.py \
+   --training-file-path data/biobert_tokenized/test-all-reviewed.jsonl \
+   --val-file-path data/biobert_tokenized/dev-all-reviewed.jsonl \
+   --output-dir results \
+   --model-config-file configs/config-biobert.json
+````
 
 training_almost_ready includes:
 
@@ -293,6 +300,51 @@ Missing 1500-1800
 
 GFR no - check
 crcl no - check
+concentrations - check
+max doses - check
 
 
 
+TEST TO CORRECT:
+
+188373212
+-72628336
+932029833
+-424252256 cbw
+
+DEV TO CORRECT:
+
+-1986709618
+-157678222 response rate?
+1570154742 parenthesis
+-1592768135 late phase
+1164562386 units
+1611056298
+-342240023
+1227138670 units
+-2049618001 slowest
+-457441628 range
+632683494
+618554853
+-2000507776 43
+720821972 greater
+1120077822 under
+
+CHECK TRAINING
+
+
+799343678 edit spacing
+1604399443 edit
+
+
+
+
+ROUND2 (STILL TO DO)
+
+TEST: -1905290727
+
+TRAIN:
+retention time: -1294653114, -1372168709
+recoveries (dont'): -363191018
+g protein: -2081848871
+accumulation ratio: -1597632365, 

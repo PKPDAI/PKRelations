@@ -1,18 +1,14 @@
 import os
 from pathlib import Path
-from typing import List, Dict
-
 import typer
-from sklearn.metrics import classification_report
 from transformers import BertTokenizerFast
-from pkrex.models.bertpkrex import load_pretrained_model, get_avg_ner_metrics
-from pkrex.annotation_preproc import view_all_entities_terminal, clean_instance_span, visualize_relations_brat
-from pkrex.utils import read_jsonl, print_ner_scores, write_jsonl
-
-from pkrex.models.utils import predict_pl_bert_rex, arrange_relationship
-from nervaluate import Evaluator
+from pkrex.models.bertpkrex import load_pretrained_model
+from pkrex.annotation_preproc import clean_instance_span
+from pkrex.utils import read_jsonl, write_jsonl
+from pkrex.models.utils import predict_pl_bert_rex
 import spacy
 from tqdm import tqdm
+
 
 def main(
         model_checkpoint: Path = typer.Option(
@@ -29,7 +25,6 @@ def main(
         n_workers: int = typer.Option(default=12, help="Number of workers to use for the dataloader"),
         debug: float = typer.Option(default=False)
 ):
-
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     if debug:
         gpu = False
@@ -72,8 +67,8 @@ def main(
 def clean_rels(inp_rels, inp_text):
     out_spans = []
     out_rels = []
-    NLP = spacy.load("data/models/tokenizers/super-tokenizer")
-    doc = NLP(inp_text)
+    spacy_nlp = spacy.load("data/models/tokenizers/super-tokenizer")
+    doc = spacy_nlp(inp_text)
     tok_ofs = [(tok.idx, tok.idx + len(tok)) for tok in doc]
     for r in inp_rels:
         if r['label'] != "NO_RELATION":
@@ -100,7 +95,7 @@ def clean_rels(inp_rels, inp_text):
 
 
 def span_to_tok_start(inp_spacy_tok_offsets, inp_span):
-    for i, (s, e) in enumerate(inp_spacy_tok_offsets):
+    for i, (s, _) in enumerate(inp_spacy_tok_offsets):
         if s == inp_span['start']:
             return i
     return None

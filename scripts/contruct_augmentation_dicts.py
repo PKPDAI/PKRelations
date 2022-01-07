@@ -1,6 +1,4 @@
 import json
-from typing import List
-
 import typer
 from pathlib import Path
 from pkrex.utils import read_jsonl
