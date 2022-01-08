@@ -6,8 +6,6 @@ xmltodict==0.12.0
 azure-storage-blob==12.7.1
 requests==2.25.1
 typer==0.3.2
-setuptools==52.0.0
-prodigy==1.10.8
 pandas==1.2.3
 termcolor==1.1.0
 pexpect==4.8.0
@@ -15,6 +13,7 @@ filelock==3.0.12
 pytorch-lightning==1.2.6
 transformers==4.4.2
 torch==1.8.1
+torchmetrics==0.3.2
 tokenizers==0.10.2
 tensorflow==2.5.0
 tensorboard==2.5.0
