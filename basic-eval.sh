@@ -1,1 +1,1 @@
-python scripts/evaluate_new_bert.py --model-checkpoint results/checkpoints/biobert-rex-256-bs8-lr2e5-epoch=0018-cval_f1=0.90.ckpt --predict-file-path data/biobert-tokenized/test.jsonl --display-errors n-workers 24
+python scripts/evaluate_new_bert.py --model-checkpoint results/checkpoints/biobert-rex-256-bs8-lr2e5-epoch=0018-cval_f1=0.90.ckpt --predict-file-path data/biobert-tokenized/test.jsonl --display-errors --n-workers 24
