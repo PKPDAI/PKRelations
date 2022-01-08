@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html
+PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+	<head>
+		<link rel="stylesheet" type="text/css" href="css/style-vis.css"/>
+
+		<script type="text/javascript" src="js/head.js"></script>
+
+		<title> View prodigy relations</title>
+	</head>
+
+
+
+	<body>
+
+		<!-- Start BRAT (always static) -->
+		<script type="text/javascript">
+			var bratLocation = 'http://weaver.nlplab.org/~brat/demo/v1.3';
+				head.js(
+    					// External libraries
+    					bratLocation + '/client/lib/jquery.min.js',
+    					bratLocation + '/client/lib/jquery.svg.min.js',
+    					bratLocation + '/client/lib/jquery.svgdom.min.js',
+					
+    					// brat helper modules
+    					bratLocation + '/client/src/configuration.js',
+    					bratLocation + '/client/src/util.js',
+    					bratLocation + '/client/src/annotation_log.js',
+    					bratLocation + '/client/lib/webfont.js',
+					
+    					// brat modules
+    					bratLocation + '/client/src/dispatcher.js',
+    					bratLocation + '/client/src/url_monitor.js',
+    					bratLocation + '/client/src/visualizer.js'
+    					);
+
+    		var webFontURLs = [
+    			bratLocation + '/static/fonts/Astloch-Bold.ttf',
+    			bratLocation + '/static/fonts/PT_Sans-Caption-Web-Regular.ttf',
+    			bratLocation + '/static/fonts/Liberation_Sans-Regular.ttf'
+			];
+			
+		</script>
+
+
+		<!-- Add example (some static and some dynamic elements) -->
+		<div id="example1">
+			
+			<div id="embedding-1-example"></div> 
+			<div id="embedding-2-example"></div> 
+			<script type="text/javascript">
+				
+				// 1. Head function (could always be the same) -->
+				
+	
+				head.ready(function() {
+    				Util.embed(
+    				    // id of the div element where brat should embed the visualisations
+    				    'embedding-1-example',
+    				    // object containing collection data
+    				    collData,
+    				    // object containing document data
+    				    docData,
+    				    // Array containing locations of the visualisation fonts
+    				    webFontURLs
+    				    );
+
+    				Util.embed(
+
+    					'embedding-2-example',
+    				    // object containing collection data
+    				    collData,
+    				    // object containing document data
+    				    docData2,
+    				    // Array containing locations of the visualisation fonts
+    				    webFontURLs
+
+
+    					);
+				});
+	
+				// <!-- 2. Collection Data (could always be the same) -->
+	
+				var collData = {
+   						entity_types: [ {
+   					        				type   : 'PK',
+   					        				labels : ['PK', 'PK'],
+   					        				bgColor: '#ffa9b8',
+   					        				borderColor: 'darken'
+   										},
+
+   										{
+   					        				type   : 'VALUE',
+   					        				labels : ['VALUE', 'VALUE'],
+   					        				bgColor: '#d1caff',
+   					        				borderColor: 'darken'
+   										},
+
+   										{
+   					        				type   : 'UNITS',
+   					        				labels : ['UNITS', 'UN'],
+   					        				bgColor: '#00ffff',
+   					        				borderColor: 'darken'
+   										},
+
+   										{
+   					        				type   : 'TYPE_MEAS',
+   					        				labels : ['TYPE_MEAS', 'TM'],
+   					        				bgColor: '#ffa973',
+   					        				borderColor: 'darken'
+   										},
+
+   										{
+   					        				type   : 'COMPARE',
+   					        				labels : ['COMPARE', 'COMP'],
+   					        				bgColor: '#9effd6',
+   					        				borderColor: 'darken'
+   										},
+
+   										{
+   					        				type   : 'RANGE',
+   					        				labels : ['RANGE', 'RGE'],
+   					        				bgColor: '#66f542',
+   					        				borderColor: 'darken'
+   										}       
+   									]
+				};
+	
+				collData['relation_types'] = [ 
+												{
+												    type     : 'C_VAL',
+												    labels   : ['C_VAL', 'CV'],
+												    color    : 'blue',
+												},
+
+												{
+												    type     : 'D_VAL',
+												    labels   : ['D_VAL', 'DV'],
+												    color    : '#ff8c00',
+												},
+
+
+												{
+												    type     : 'RELATED',
+												    labels   : ['RELATED', 'REL'],
+												    color    : '#32cd32',
+												}
+											];
+										
+					
+					// 3. Doc Data (dynamic and dependent on text) 
+	
+					var docData = {
+
+    				text     : "Ed O'Kelley was the man who shot the man who shot Jesse James.",
+
+					    entities : [
+					        /* Format: [${ID}, ${TYPE}, [[${START}, ${END}]]]
+					            note that range of the offsets are [${START},${END}) */
+					        ['T1', 'PK', [[0, 11]]],
+					        ['T2', 'VALUE', [[20, 23]]],
+					        ['T3', 'PK', [[37, 40]]],
+					        ['T4', 'TYPE_MEAS', [[50, 61]]],
+					    ],
+					};
+					
+					
+					docData['relations'] = [ 
+					    // Format: [${ID}, ${TYPE}, [[${ARGNAME}, ${TARGET}], [${ARGNAME}, ${TARGET}]]]
+					    ['R1', 'C_VAL', [['Entity', 'T1'], ['C_VAL', 'T2']]],
+					    ['R2', 'D_VAL', [['Entity', 'T1'], ['D_VAL', 'T4']]]
+					];
+
+
+
+
+					var docData2 = {
+
+    				text     : "Ed O'Kelley was the man who shot the man who shot Jesse Jamessss.",
+
+					    entities : [
+					        /* Format: [${ID}, ${TYPE}, [[${START}, ${END}]]]
+					            note that range of the offsets are [${START},${END}) */
+					        ['T1', 'PK', [[0, 11]]],
+					        ['T2', 'VALUE', [[20, 23]]],
+					        ['T3', 'PK', [[37, 40]]],
+					        ['T4', 'TYPE_MEAS', [[50, 61]]],
+					    ],
+					};
+					
+					
+					docData2['relations'] = [ 
+					    // Format: [${ID}, ${TYPE}, [[${ARGNAME}, ${TARGET}], [${ARGNAME}, ${TARGET}]]]
+					    ['R1', 'C_VAL', [['Entity', 'T1'], ['C_VAL', 'T2']]],
+					    ['R2', 'D_VAL', [['Entity', 'T1'], ['D_VAL', 'T4']]]
+					];
+
+			</script>
+		</div>
+
+		
+	</body>
+
+</html>

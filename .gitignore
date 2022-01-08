@@ -82,5 +82,4 @@ cython_debug/
 !/data/annotations/P1/ready/train.jsonl
 /labels_1.jsonl
 /labels_2.jsonl
-/brat/
 /results/
