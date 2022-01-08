@@ -32,6 +32,8 @@ class BertPKREX(pl.LightningModule):
         self.seq_len = config['max_length']
         self.lr = config['learning_rate']
         self.eps = config['eps']
+        self.include_cls = False
+        self.include_ctx_emb = False
         #    self.weight_decay = config['weight_decay']
         self.lr_warmup = assign_property(inp_config=config, parameter_name='lr_warmup', alternative=False)
         self.weight_decay = assign_property(inp_config=config, parameter_name='weight_decay', alternative=False)
@@ -46,7 +48,16 @@ class BertPKREX(pl.LightningModule):
         self.ner_classifier = torch.nn.Linear(in_features=768,
                                               out_features=self.nl)
         # REX
-        self.rel_classifier = torch.nn.Linear(768 * 4 + config['ctx_embedding_size'], len(set(REX2ID.values())))
+
+        rel_class_input_size = 768*3
+        if config['include_ctx_emb']:
+            rel_class_input_size += config['ctx_embedding_size']
+            self.include_ctx_emb = True
+        if config['include_cls']:
+            self.include_cls = True
+            rel_class_input_size += 768
+
+        self.rel_classifier = torch.nn.Linear(rel_class_input_size, len(set(REX2ID.values())))
         self.size_embeddings = torch.nn.Embedding(config['max_length'], config['ctx_embedding_size'])
         self.save_hyperparameters()
 
@@ -63,7 +74,8 @@ class BertPKREX(pl.LightningModule):
         # 768
         cls_tokens = inp_sequence_rep[:, 0, :]
         cls_tokens = cls_tokens.unsqueeze(dim=1).repeat(1, context_reps.shape[1], 1)
-        context_reps = torch.cat([context_reps, cls_tokens], dim=2)
+        if self.include_cls:
+            context_reps = torch.cat([context_reps, cls_tokens], dim=2)
 
         # 3. Size embeddings
         size_reps = self.size_embeddings(inp_ctx_width)
@@ -74,7 +86,10 @@ class BertPKREX(pl.LightningModule):
         context_reps = self.replace_zero_context(inp_context_tensor=context_reps)
         size_reps = torch.flatten(size_reps, end_dim=1)
         assert size_reps.shape[0] == context_reps.shape[0] == entity_pairs.shape[0] == inp_rex_masks.shape[0]
-        all_rel_reps = torch.cat([entity_pairs, context_reps, size_reps], dim=1)
+        if self.include_ctx_emb:
+            all_rel_reps = torch.cat([entity_pairs, context_reps, size_reps], dim=1)
+        else:
+            all_rel_reps = torch.cat([entity_pairs, context_reps], dim=1)
         all_rel_reps = all_rel_reps[inp_rex_masks]  # filter according to mask
 
         # 5. Pass through linear layer

@@ -1,5 +1,5 @@
 {
-  "run_name": "biobert-rex-256-bs8-lr2e5",
+  "run_name": "biobert-rex",
   "base_model": "dmis-lab/biobert-v1.1",
 
   "n_workers_dataloader": 12,
@@ -26,5 +26,7 @@
   "remove_longer_seqs": true,
   "lr_warmup": false,
   "weighted_loss": false,
-  "final_train": false
+  "final_train": false,
+  "include_ctx_emb": false,
+  "include_cls": false
 }

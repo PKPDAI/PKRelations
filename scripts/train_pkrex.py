@@ -23,6 +23,12 @@ def main(
                                         help="Output directory"),
         model_config_file: Path = typer.Option(default="configs/config-biobert.json"),
         print_tokens: bool = typer.Option(default=False),
+        prefix: str = typer.Option(default=None, help="Prefix to include in the run name"),
+        lr: float = typer.Option(default=None),
+        seed: int = typer.Option(default=None),
+        include_ctx_emb: int = typer.Option(default=None),
+        include_cls: int = typer.Option(default=None),
+        ignore_eval: bool = typer.Option(default=False),
 
         debug_mode: bool = typer.Option(default=False)
 
@@ -31,6 +37,21 @@ def main(
 
     with open(model_config_file) as cf:
         config = json.load(cf)
+
+    if prefix is not None:
+        config['run_name'] += f"-{prefix}"
+    if lr is not None:
+        config['learning_rate'] = lr
+        config['run_name'] += f"-lr={lr}"
+    if seed is not None:
+        config['seed'] = seed
+        config['run_name'] += f"-seed={seed}"
+    if include_cls:
+        config['include_cls'] = True
+        config['run_name'] += f"-cls"
+    if include_ctx_emb:
+        config['include_ctx_emb'] = True
+        config['run_name'] += f"-ctxemb"
 
     limit_train_batches = 1.
     limit_val_batches = 1.
