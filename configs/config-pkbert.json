@@ -6,7 +6,7 @@
   "gpus": true,
   "seed": 1,
 
-  "learning_rate": 2e-5,
+  "learning_rate": 3e-5,
   "max_epochs": 20,
   "max_length":128,
   "batch_size": 2,
@@ -26,5 +26,7 @@
   "remove_longer_seqs": true,
   "lr_warmup": false,
   "weighted_loss": false,
-  "final_train": false
+  "final_train": false,
+  "include_ctx_emb": true,
+  "include_cls": true
 }

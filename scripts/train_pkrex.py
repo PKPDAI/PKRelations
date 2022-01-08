@@ -26,8 +26,8 @@ def main(
         prefix: str = typer.Option(default=None, help="Prefix to include in the run name"),
         lr: float = typer.Option(default=None),
         seed: int = typer.Option(default=None),
-        include_ctx_emb: int = typer.Option(default=None),
-        include_cls: int = typer.Option(default=None),
+        include_ctx_emb: bool = typer.Option(default=False),
+        include_cls: bool = typer.Option(default=False),
         ignore_eval: bool = typer.Option(default=False),
 
         debug_mode: bool = typer.Option(default=False)
