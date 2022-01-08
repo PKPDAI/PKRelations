@@ -1,5 +1,5 @@
 {
-  "run_name": "biobert-rex-new-aug-128-clean",
+  "run_name": "biobert-rex-256-bs8-lr2e5",
   "base_model": "dmis-lab/biobert-v1.1",
 
   "n_workers_dataloader": 12,
@@ -8,9 +8,9 @@
 
   "learning_rate": 2e-5,
   "max_epochs": 20,
-  "max_length":128,
-  "batch_size": 4,
-  "val_batch_size": 4,
+  "max_length":256,
+  "batch_size": 8,
+  "val_batch_size": 8,
   "eps": 1e-8,
   "ctx_embedding_size": 4,
 

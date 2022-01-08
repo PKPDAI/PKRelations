@@ -1,5 +1,11 @@
 # PKRelations
 [**Pre-processing**](#pre-processing)| [**Annotations**](#annotations) | [**Model development**](#model-development)
+
+## Download annotations
+
+````bash
+bash scripts/download-annotations.sh
+````
 ## Pre-processing
 
 1. Tag sentences across all articles/abstracts and select sentences with at least 1 PK and 1 VALUE/RANGE entity (~1.1h with 12 cores):
@@ -161,6 +167,14 @@ python scripts/train_pkrex.py \
 python scripts/train_pkrex.py \
    --training-file-path data/biobert_tokenized/test-all-reviewed.jsonl \
    --val-file-path data/biobert_tokenized/dev-all-reviewed.jsonl \
+   --output-dir results \
+   --model-config-file configs/config-biobert.json
+````
+
+```` shell
+python scripts/train_pkrex.py \
+   --training-file-path data/biobert_tokenized/train.jsonl \
+   --val-file-path data/biobert_tokenized/dev.jsonl \
    --output-dir results \
    --model-config-file configs/config-biobert.json
 ````
