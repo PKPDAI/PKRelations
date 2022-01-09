@@ -27,7 +27,7 @@ def main(
         lr: float = typer.Option(default=None),
         seed: int = typer.Option(default=None),
         include_ctx_emb: bool = typer.Option(default=False),
-        include_cls: bool = typer.Option(default=False) ,
+        include_cls: bool = typer.Option(default=False),
         ignore_eval: bool = typer.Option(default=False),
 
         debug_mode: bool = typer.Option(default=False)
@@ -140,7 +140,7 @@ def main(
         gpus = torch.cuda.device_count()
         empty_cuda_cache(gpus)
 
-    if not config["final_train"]:
+    if (not config["final_train"]) and (not ignore_eval):
 
         checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='cval_f1',
                                                            dirpath=os.path.join(config['output_dir'], 'checkpoints'),
@@ -167,7 +167,7 @@ def main(
 
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             dirpath=os.path.join(config['output_dir'], 'checkpoints'),
-            filename=config['run_name'] + 'train_dev',
+            filename=config['run_name'],
             save_last=True
         )
         trainer = pl.Trainer(
@@ -179,7 +179,7 @@ def main(
             log_every_n_steps=1,
             gradient_clip_val=config["gradient_clip_val"],
             limit_val_batches=0,  # do not validate
-            limit_train_batches=limit_train_batches
+            # limit_train_batches=limit_train_batches
         )
 
     if config['early_stopping']:
