@@ -153,19 +153,4 @@ python scripts/train_pkrex.py \
    --output-dir results \
    --model-config-file configs/config-biobert.json
 ````
-
-```` shell
-python scripts/train_pkrex.py \
-   --training-file-path data/biobert_tokenized/test-all-reviewed.jsonl \
-   --val-file-path data/biobert_tokenized/dev-all-reviewed.jsonl \
-   --output-dir results \
-   --model-config-file configs/config-biobert.json
-````
-
-```` shell
-python scripts/train_pkrex.py \
-   --training-file-path data/biobert_tokenized/train.jsonl \
-   --val-file-path data/biobert_tokenized/dev.jsonl \
-   --output-dir results \
-   --model-config-file configs/config-biobert.json
 ````
