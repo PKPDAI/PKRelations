@@ -1,11 +1,46 @@
 # PKRelations
-[**Pre-processing**](#pre-processing)| [**Annotations**](#annotations) | [**Model development**](#model-development)
+[**Download annotations**](#download-annotations)| [**Model development**](#model-development)| [**Pre-processing**](#pre-processing)
 
 ## Download annotations
 
 ````bash
 bash scripts/download-annotations.sh
 ````
+
+## Model development
+
+Launch training:
+
+````sh
+python scripts/train_pkrex.py \
+   --training-file-path data/biobert_tokenized/train-all-reviewed.jsonl
+   --val-file-path data/biobert_tokenized/dev-all-reviewed.jsonl \
+   --output-dir results \
+   --model-config-file configs/config-biobert.json
+````
+
+Output format expectation:
+````python
+var = 
+    {
+        "parameter_mention": "renal CL",
+
+        "central_measurement": {
+            "value/range": 3.0,
+            "units": "mL/min",
+            "comparative_term": "higher",
+            "type_measurement": "median"
+        },
+
+        "deviation_measurement": {
+            "value/range": 0.2,
+            "units": "mL/min",
+            "comparative_term": "",
+            "type_measurement": "+-"
+        }
+    }
+````
+
 ## Pre-processing
 
 1. Tag sentences across all articles/abstracts and select sentences with at least 1 PK and 1 VALUE/RANGE entity (~1.1h with 12 cores):
@@ -84,73 +119,4 @@ Filter sentences annotated in P1 ready for P2
 python scripts/filter_part_2.py \
    --input-file data/annotations/dev/1/rex-dev0-200.jsonl \
    --output-dir data/part2/dev/
-````
-
-## Annotations
-
-Annotation recipes are stored at the `recipes` folder. To launch the recipe run: 
-
-````bash
-PRODIGY_ALLOWED_SESSIONS=ferran,vicky,joe,frank PRODIGY_PORT=8001 prodigy custom.rel.manual rex-pilot-50 data/models/tokenizers/super-tokenizer data/gold/train0-200.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE  --wrap -F recipes/rel_custom.py
-````
-
-#### Review annotated data
-
-Run this to retrieve a file from azure storage containing annotations:
-
-````bash
-python scripts/split_annotations.py \
-   --azure-file-name rex-pilot-ferran-output.jsonl \
-   --save-local true \
-   --out-dir data/annotations/pilot
-````
-
-This will create different prodigy datasets on your local machine, one for each annotator.
-
-Launch review:
-
-````bash
-prodigy review rex-pilot-reviewed rex-pilot-ferran-frank-done,rex-pilot-ferran-ferran-done,rex-pilot-ferran-simon-done --view-id relations
-````
-
-
-Review existing annotations from a single file: 
-
-````bash
-prodigy custom.rel.manual rex-simon-reviewed data/models/tokenizers/rex-tokenizer data/rex-pilot-ferran-simon-done.jsonl --label C_VAL,D_VAL,RELATED --wrap --span-label UNITS,PK,TYPE_MEAS,COMPARE,RANGE,VALUE  --wrap -F recipes/rel_custom.py
-````
-
-
-
-## Model development
-
-Output format expectation:
-````
-var = 
-    {
-        "parameter_mention": "renal CL",
-
-        "central_measurement": {
-            "value/range": 3.0,
-            "units": "mL/min",
-            "comparative_term": "higher",
-            "type_measurement": "median"
-        },
-
-        "deviation_measurement": {
-            "value/range": 0.2,
-            "units": "mL/min",
-            "comparative_term": "",
-            "type_measurement": "+-"
-        }
-    }
-````
-
-```` shell
-python scripts/train_pkrex.py \
-   --training-file-path data/biobert_tokenized/train-all-reviewed.jsonl \
-   --val-file-path data/biobert_tokenized/dev-all-reviewed.jsonl \
-   --output-dir results \
-   --model-config-file configs/config-biobert.json
-````
 ````
